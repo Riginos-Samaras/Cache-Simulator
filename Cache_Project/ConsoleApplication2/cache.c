@@ -13,12 +13,13 @@ errno_t error;
 #define	RAM_SIZE 512
 #define	CACHE_SIZE 128
 #define WORD_SIZE 4
-#define WORDS_PER_BLOCK 4
-#define FULL_ASSOCIATIVE 1
-#define SET_ASSOCIATIVE 0
+#define WORDS_PER_BLOCK 2
+#define FULL_ASSOCIATIVE 0
+#define SET_ASSOCIATIVE 1
 #define DIRECT_MAPPED 0
 #define DATA_FILL_NUMBER 3
 #define SET_ASSOCIATIVE_WAYS 8
+#define MAX_FLUSHES 2
 
 /*****FILES*****/
 FILE *DataBase_w;               //Write to Data.txt
@@ -114,28 +115,29 @@ int stringSize(char A[]){
 //** Fills Data.txt with random cache action and random numbers  "R 10","W 9", "M 5" **//
 void fillDataBase(FILE *DataBase){
         int i=0;				//variable used in for
-		int flush_constant=1;	//that constant gets values 1,2 or 3
+		int flush_constant=0;	//that constant gets values 1,2 or 3
         char ch;				//variable used for characters
         int y;					
-		int flush_max=LinesInDataBase/6;//max flush into Data.txt will be 1/6'th of total lines
+		int flush_max=MAX_FLUSHES;//max flush into Data.txt will be 1/6'th of total lines
 		int flush_times=0;
         if(DataBase!=NULL){
              while(i<LinesInDataBase){
                 ch=cacheAction();			//randomly gets an action from Write Read Modify and Flush
                 y=random_number(MAX_NUMBER);//randomly gets a number from 0 to Max Number-1
 				
-				if(flush_times>=flush_max)	//if flush time is more LinesInDataBase/6 
+				if(flush_times>=flush_max||flush_max<=0)	//if flush time is more LinesInDataBase/6 
 					while(ch=='F')			//gets an other cache action
 						ch=cacheAction();	
+
 				if(ch=='F'){			//if its a flush ('F')
 					flush_constant++;	//increases the constant
-					if(flush_constant==4)//that constant gets values 1,2 or 3
-						flush_constant=1;
-					if(flush_constant==1||flush_constant==2){// 2/3 of the times it will write 'F' into Data.txt
+					if(flush_constant==(LinesInDataBase/MAX_FLUSHES/4))//that constant gets values 
+						flush_constant=0;
+					if(flush_constant==0){// 2/3 of the times it will write 'F' into Data.txt
 						flush_times++;
 						fprintf(DataBase,"%c \n",ch,flush_times);
 					}
-					else if(flush_constant==3){			 // 1/3 of the times 
+					else {			 // 1/3 of the times 
 						while(ch=='F')					 // will change that action 
 							ch=cacheAction();			 // to another action
 						fprintf(DataBase,"%c %d\n",ch,y);// and write it into Data.txt
@@ -351,11 +353,27 @@ void findErrors(){
 				_getch();
 				exit(5);
 	}
-	if(cachesize<(WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE)){//data should fit into cache size
+	if(!isLog_2(SET_ASSOCIATIVE_WAYS)&&SET_ASSOCIATIVE){//cannot have words per block which are not a power of 2
+				printf("Error:SET_ASSOCIATIVE_WAYS should be a power of 2");
+				_getch();
+				exit(5);
+	}
+	if(SET_ASSOCIATIVE&&cachesize<(WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE)){//data should fit into cache size
 				printf("Error:CACHE_SIZE should be bigger that WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE");
 				_getch();
 				exit(6);
 	}
+	else if(cachesize<(WORDS_PER_BLOCK*WORD_SIZE)){
+				printf("Error:CACHE_SIZE should be bigger that WORDS_PER_BLOCK*WORD_SIZE");
+				_getch();
+				exit(7);
+	}
+	if(!isLog_2(WORD_SIZE)){//cannot have words per block which are not a power of 2
+				printf("Error:WORDS_SIZE should be a power of 2");
+				_getch();
+				exit(8);
+	}
+
 }
 
 //** returns 1 if an integer is log of 2 else returns 0  **//
