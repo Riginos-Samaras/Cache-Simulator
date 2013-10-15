@@ -10,12 +10,12 @@
 errno_t error;
 
 /*****DEFINES*****/
-#define	RAM_SIZE 2048
+#define	RAM_SIZE 512
 #define	CACHE_SIZE 128
 #define WORD_SIZE 4
 #define WORDS_PER_BLOCK 4
-#define FULL_ASSOCIATIVE 0
-#define SET_ASSOCIATIVE 1
+#define FULL_ASSOCIATIVE 1
+#define SET_ASSOCIATIVE 0
 #define DIRECT_MAPPED 0
 #define DATA_FILL_NUMBER 3
 #define SET_ASSOCIATIVE_WAYS 8
@@ -162,19 +162,19 @@ void fillOutput(FILE *Output_w){
 			parseWord(FilesLine,0);		//takes the 1st word which shows the action
 			if(WordInLine[0]=='R'){		//prints READ if its a Read action 
 				printf("ACTION: READ\t",atoi(WordInLine));
-				fprintf(Output_w,"ACTION: READ\t",atoi(WordInLine));
+				fprintf(Output_w,"ACTION: READ\t");
 			}
 			if(WordInLine[0]=='W'){		//prints WRITE if its a Write action 
 				printf("ACTION: WRITE\t",atoi(WordInLine));
-				fprintf(Output_w,"ACTION: WRITE\t",atoi(WordInLine));
+				fprintf(Output_w,"ACTION: WRITE\t");
 			}
 			if(WordInLine[0]=='M'){		//prints MODIFY if its a Modify action 
 				printf("ACTION: MODIFY\t",atoi(WordInLine));
-				fprintf(Output_w,"ACTION: MODIFY\t",atoi(WordInLine));
+				fprintf(Output_w,"ACTION: MODIFY\t");
 			}
 			if(WordInLine[0]=='F'){		//prints FLUSH if its a Flush action 
 				printf("ACTION: FLUSH\n",atoi(WordInLine));
-				fprintf(Output_w,"ACTION: FLUSH\n",atoi(WordInLine));
+				fprintf(Output_w,"ACTION: FLUSH\n");
 				continue;
 			}
 			parseWord(FilesLine,1);		//Takes again the second word
@@ -299,7 +299,7 @@ int log_2(int n){
 void findTagIndexBlockOffset(){
 	Ram_bits=log_2(RAM_SIZE/WORD_SIZE);		//gets the number of ram bits into the global variable Ram_bits
 	Cache_bits=log_2(CACHE_SIZE/WORD_SIZE); //gets the number of Cache bits into the global variable Cache_bits
-	MAX_NUMBER=pow(Ram_bits,2)-1;			//gets the maximum into the global variable MAX_NUMBER
+	MAX_NUMBER=pow(2,Ram_bits)-1;			//gets the maximum into the global variable MAX_NUMBER
 	LinesInDataBase=(MAX_NUMBER+1)*DATA_FILL_NUMBER;//puts the total lines of Data.txt into the global variable LinesInDataBase
 	
 	if(DIRECT_MAPPED==1&&!SET_ASSOCIATIVE&&!FULL_ASSOCIATIVE){//Its Direct Mapped so it find the considering results TAG INDEX BLOCK OFFSET
