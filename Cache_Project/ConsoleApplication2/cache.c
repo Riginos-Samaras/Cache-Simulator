@@ -456,6 +456,26 @@ void findErrors(){
 	int wordsperblock=WORDS_PER_BLOCK;
 	int i=0;
 	int iserror=0;
+	if(READ_FROM_CACHE<=0){//cache size cant be bigger than Ram size
+				printf("Error:READ_FROM_CACHE should be bigger than zero\n");
+				iserror=1;
+	}
+	if(READ_FROM_RAM<=0){//cache size cant be bigger than Ram size
+				printf("Error:READ_FROM_RAM should be bigger than zero\n");
+				iserror=1;
+	}
+	if(WRITE_TO_CACHE<=0){//cache size cant be bigger than Ram size
+				printf("Error:WRITE_TO_CACHE should be bigger than zero\n");
+				iserror=1;
+	}
+	if(WRITE_TO_RAM<=0){//cache size cant be bigger than Ram size
+				printf("Error:WRITE_TO_RAM should be bigger than zero\n");
+				iserror=1;
+	}
+	if(ACCESS_CACHE<=0){//cache size cant be bigger than Ram size
+				printf("Error:ACCESS_CACHE should be bigger than zero\n");
+				iserror=1;
+	}
 	if(cachesize>=ramsize){//cache size cant be bigger than Ram size
 				printf("Error:RAM_SIZE should be bigger than CACHE_SIZE\n");
 				iserror=1;
