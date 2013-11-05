@@ -455,67 +455,63 @@ void findErrors(){
 	int wordsize=WORD_SIZE;
 	int wordsperblock=WORDS_PER_BLOCK;
 	int i=0;
+	int iserror=0;
 	if(cachesize>=ramsize){//cache size cant be bigger than Ram size
-				printf("Error:RAM_SIZE should be bigger than CACHE_SIZE");
-				_getch();
-				exit(2);
+				printf("Error:RAM_SIZE should be bigger than CACHE_SIZE\n");
+				iserror=1;
 	}
 	if(!isLog_2(cachesize)){//cannot have cache size which is not a power of 2
-				printf("Error:CACHE_SIZE should be a power of 2");
-				_getch();
-				exit(3);
+				printf("Error:CACHE_SIZE should be a power of 2\n");
+				iserror=1;
 	}
 	if(!isLog_2(ramsize)){//cannot have Ram size which is not a power of 2
-				printf("Error:RAM_SIZE should be a power of 2");
-				_getch();
-				exit(4);
+				printf("Error:RAM_SIZE should be a power of 2\n");
+				iserror=1;
 	}
 	if(!isLog_2(wordsperblock)){//cannot have words per block which are not a power of 2
-				printf("Error:WORDS_PER_BLOCK should be a power of 2");
-				_getch();
-				exit(5);
+				printf("Error:WORDS_PER_BLOCK should be a power of 2\n");
+				iserror=1;
 	}
 	if(!isLog_2(SET_ASSOCIATIVE_WAYS)&&SET_ASSOCIATIVE){//cannot have words per block which are not a power of 2
-				printf("Error:SET_ASSOCIATIVE_WAYS should be a power of 2");
-				_getch();
-				exit(5);
+				printf("Error:SET_ASSOCIATIVE_WAYS should be a power of 2\n");
+				iserror=1;
 	}
 	if(SET_ASSOCIATIVE&&cachesize<(WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE)){//data should fit into cache size
-				printf("Error:CACHE_SIZE should be bigger that WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE");
-				_getch();
-				exit(6);
+				printf("Error:CACHE_SIZE should be bigger than WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE\n");
+				iserror=1;;
 	}
 	else if(cachesize<(WORDS_PER_BLOCK*WORD_SIZE)){
-				printf("Error:CACHE_SIZE should be bigger that WORDS_PER_BLOCK*WORD_SIZE");
-				_getch();
-				exit(7);
+				printf("Error:CACHE_SIZE should be bigger than WORDS_PER_BLOCK*WORD_SIZE\n");
+				iserror=1;
 	}
 	if(!isLog_2(WORD_SIZE)){//cannot have words per block which are not a power of 2
-				printf("Error:WORDS_SIZE should be a power of 2");
-				_getch();
-				exit(8);
+				printf("Error:WORDS_SIZE should be a power of 2\n");
+				iserror=1;
 	}
 	if(WRITE_BACK!=(0|1)&&WRITE_THROUGH!=(1|0)){//cannot have words per block which are not a power of 2
-				printf("Error:WRITEBACK_THROUGH SHOULD BE \"0\" or \"1\"");
-				_getch();
-				exit(9);
+				printf("Error:WRITEBACK_THROUGH SHOULD BE \"0\" or \"1\"\n");
+				iserror=1;
 	}
 	if(WRITE_ALLOCATE!=0&&WRITE_ALLOCATE!=1){//cannot have words per block which are not a power of 2
-				printf("Error:WRITE_ALLOCATE SHOULD BE \"0\" or \"1\"");
-				_getch();
-				exit(10);
+				printf("Error:WRITE_ALLOCATE SHOULD BE \"0\" or \"1\"\n");
+				iserror=1;
 	}
 	if(WRITE_BACK==WRITE_THROUGH){//write back and through cant be true or faulse at the same time
-				printf("Error:WRITEBACK_THROUGH SHOULDNT BE \"0\" or \"1\" AT THE SAME TIME");
-				_getch();
-				exit(12);
+				printf("Error:WRITEBACK_THROUGH SHOULDNT BE \"0\" or \"1\" AT THE SAME TIME\n");
+				iserror=1;
 	}
 	if(!isStringEqual(POLICY,"RANDOM")&&!isStringEqual(POLICY,"FIFO")&&!isStringEqual(POLICY,"LRU")){
-				printf("Error:POLICY SHOULD BE \"RANDOM\" or \"FIFO\" or \"LRU\"");
-				_getch();
-				exit(11);
+				printf("Error:POLICY SHOULD BE \"RANDOM\" or \"FIFO\" or \"LRU\"\n");
+				iserror=1;
 	}
-
+	if(MAX_FLUSHES<0){
+				printf("Error:MAX FLUSHES SHOULDNT BE LESS THAN ZERO\n");
+				iserror=1;
+	}
+	if(iserror){
+		_getch();
+		exit(1);
+	}
 }
 //** returns 1 if an integer is log of 2 else returns 0  **//
 int isLog_2(int parameter){
