@@ -375,6 +375,7 @@ void printString(char *String){
 		}	
 	}
 }
+//** Prints the Replaced number to Output file **//
 void printBinaryNumber(int tagg,int indexx,int blockoffsets){
 	int total=0,index=indexx,tag=tagg,bo=blockoffsets;
 	tag=tagg<<BlockOffset_bits+Index_bits;
@@ -1138,6 +1139,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch){
 	}
 	return writeplace;
 }
+//** Guesses how may penalty Cycles will we have for every instuction **//
 int guessCycles(int read_write_hit_miss,int dirty){
 	
 	/*READ OR MODIFY HIT*/
@@ -1191,6 +1193,7 @@ int guessCycles(int read_write_hit_miss,int dirty){
 		}
 	}
 }
+/**Frees every single memory used by our List**/
 void free_Cache (struct Cache *chain){
 	while(chain->head!=NULL){
 		chain=chain->head;
