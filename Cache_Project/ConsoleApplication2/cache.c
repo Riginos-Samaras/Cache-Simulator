@@ -8,33 +8,45 @@
 #include <malloc.h>
 #include <time.h>
 errno_t error;
+/*****DEFINES*****/
+typedef int bool;
+#define true 1
+#define false 0
 
 /*****PARAMETERS*****/
 int RAM_SIZE=0;
-int	CACHE_SIZE=0;
+int	L1_CACHE_SIZE=0;
+int L2_CACHE_SIZE=0;
+int L1_ADDER=0;
+int L2_ADDER=0;
+int VICTIM_CACHE_SIZE=0;
+bool VICTIM_CACHE=false;
+bool L2_CACHE =false;
+bool CACHE_MODE =false;	
 int WORD_SIZE=0;
 int WORDS_PER_BLOCK=0;
-int FULL_ASSOCIATIVE=0;
-int SET_ASSOCIATIVE=0;
-int DIRECT_MAPPED=0;
+bool FULL_ASSOCIATIVE=false;
+bool SET_ASSOCIATIVE=false;
+bool DIRECT_MAPPED=false;
 int DATA_FILL_NUMBER=0;
 int SET_ASSOCIATIVE_WAYS=0;
 int MAX_FLUSHES=0;
-int WRITE_BACK=0;
-int WRITE_THROUGH=0;
-int WRITE_ALLOCATE=0;
+bool WRITE_BACK=false;
+bool WRITE_THROUGH=false;
+bool WRITE_ALLOCATE=false;
 char POLICY[10]={NULL};
 int READ_FROM_CACHE=0;
 int READ_FROM_RAM=0;
 int WRITE_TO_RAM=0;
 int WRITE_TO_CACHE=0;
-int ACCESS_CACHE=0;
+
 
 /*****FILES*****/
 FILE *DataBase_w;               //Write to Data.txt
 FILE *DataBase_r;				//Read from Data.txt
 FILE *Parameter_r;				//Reads the Parameters from Parameter.txt 
 FILE *Output_w;					//Writes the Output
+FILE *Results_w;
 
 /*****FUNCTIONS*****/
 int random_number(int x);	//Returns a number >=0 and <x
@@ -49,24 +61,26 @@ void printString(char *);				 //Input:a string Output: prints that String
 void printBinaryNumber(int,int,int);
 void parseWord(char*,int);				 //Input: an integer n and a line of characters and returns the n'th word
 int log_2(int);							 //Input:a deciman number Output: the log of this number base 2
-void findTagIndexBlockOffset();		     //Based on the Parameters finds the actual tag index and block offset of the current cache 
+void findTagIndexBlockOffset(int);		     //Based on the Parameters finds the actual tag index and block offset of the current cache 
 void findErrors();		//find the errors of Parameters
 int isLog_2(int);		//returns 1 if an integer is log of 2 else returns 0
 void getParameters(FILE*);
 void guessParameter(char *,char *);
 int isStringEqual(char *,char *);
 int BintoInt(int *);
-void enqueueCache(int );
-void printQueue();
-void createCache();
-int enqueuePlace(int,int,int);
+void enqueueCache(int ,int,struct Cache);
+void printQueue(struct Cache);
+void createCache(int,struct Cache *);
+void createVictim(int,struct Cache *);
+void initializer();
+int enqueuePlace(int,int,int,int,int,int,struct Cache);
 int guessCycles(int,int);
 void free_Cache (struct Cache *chain);
-	//void createAddress();
+int enqueueVictim( int,int,int,int,int);
 
 struct Cache
 {
- int Valid;
+ bool Valid;
  int Tag;
  int Index;
  int BlockOffSet;
@@ -97,9 +111,10 @@ char Action;
 int Tag_cache;
 int Index_cache;
 int BlockOffset_cache;
+
+/*****RESULT VARIABLES*****/
 int Hits=0;
 int Misses=0;
-
 int ReadMiss=0;
 int WriteMiss=0;
 int ModifyMiss=0;
@@ -107,72 +122,160 @@ int ReadHit=0;
 int WriteHit=0;
 int ModifyHit=0;
 int Cycles=0;
-struct Cache Head;
-struct Cache Tail;
+int compulsory=0;
+int conflict=0;
+int capacity=0;
+
+/*****L1 AND L2 CACHE POINTERS*****/
+struct Cache L1_Head;
+struct Cache L1_Tail;
+
+struct Cache L2_Head;
+struct Cache L2_Tail;
+
+struct Cache Victim_Head;
+struct Cache Victim_Tail;
 
 int main(int argc, char ** argv){
 	int i;
 	int flushNo=1;
+	int Adder_1;
+	int Adder_2;
 	float performance;
-	Head.head=&Tail;
-	Head.tail=NULL;
-	Head.BlockOffSet=-1;Head.Index=-1;Head.Tag=-1;
+	struct Cache *Temp1;
+	struct Cache *Temp2;
+	struct Cache *TempVictim;
 
-	Tail.head=NULL;
-	Tail.tail=&Head;
-	Tail.BlockOffSet=-1;Tail.Index=-1;Tail.Tag=-1;
+	Temp1=(struct Cache*)malloc((sizeof(struct Cache)));//refers to L1_Tail
+	Temp2=(struct Cache*)malloc((sizeof(struct Cache)));//refers to L2_Tail
+	TempVictim=(struct Cache*)malloc((sizeof(struct Cache)));//refers to L2_Tail
+
+	L1_Head.head=&L1_Tail;
+	L1_Head.tail=NULL;
+	L1_Head.BlockOffSet=-1;L1_Head.Index=-1;L1_Head.Tag=-1;
+
+
+	L1_Tail.head=NULL;
+	L1_Tail.tail=&L1_Head;
+	L1_Tail.BlockOffSet=-1;L1_Tail.Index=-1;L1_Tail.Tag=-1;
+
+	L2_Head.head=&L2_Tail;
+	L2_Head.tail=NULL;
+	L2_Head.BlockOffSet=-1;L2_Head.Index=-1;L2_Head.Tag=-1;
+
+
+	L2_Tail.head=NULL;
+	L2_Tail.tail=&L2_Head;
+	L2_Tail.BlockOffSet=-1;L2_Tail.Index=-1;L2_Tail.Tag=-1;
+
+	Victim_Head.head=&Victim_Tail;
+	Victim_Head.tail=NULL;
+	Victim_Head.BlockOffSet=-1;Victim_Head.Index=-1;Victim_Head.Tag=-1;
+
+
+	Victim_Tail.head=NULL;
+	Victim_Tail.tail=&Victim_Head;
+	Victim_Tail.BlockOffSet=-1;Victim_Tail.Index=-1;Victim_Tail.Tag=-1;
 
 	srand(time(NULL));			//helps to generate random number with rand()
 	error=fopen_s(&Parameter_r,"Parameters.txt","r+");//opens Data.txt for filling
 	printf("PARAMETERS:\n==========\n");
 	getParameters(Parameter_r);
+	
+	printf("\nTotal Cycles:%d %d",L1_CACHE_SIZE);
 	printf("\n\n");
 	findErrors();
-	findTagIndexBlockOffset();  //finds Tag Index and Block Offset of the current cache 
-	error=fopen_s(&DataBase_w,"Data.txt","w+");//opens Data.txt for filling
-	fillDataBase(DataBase_w);				   //Random cache action and random numbers in Data.txt
-	error=fopen_s(&DataBase_r,"Data.txt","r+");//opens Data.txt for parsing
-	error=fopen_s(&Output_w,"Output.txt","w+");//opens Output.txt for filling
-	printf("OUR CACHE BEFORE INPUT:\n");
-	printf("======================");
-	createCache();
-	printQueue();
-	for(i=0;i<LinesInDataBase;i++){//loops until the end of Data.txt
-		fillOutput(Output_w);		//fills Output w
-		Cycles=Cycles+ACCESS_CACHE;
-		if(Action=='R'||Action=='M'||Action=='W'){
-			//createAddress();
-			enqueueCache(i);
-		}
-		else{
-			printf(" \n");
-			printf("\nOUR CACHE BEFORE #%d FLUSH:\n",flushNo);
-			printf("======================");
-			printQueue();
-			free_Cache(Head.head);
-			Head.head=&Tail;
-			Tail.tail=&Head;
-			flushNo++;
-			createCache();
-		}
-	}
-	//printQueue();
-	printf("\n\nOUR CACHE AFTER INPUT:\n");
-	printf("=====================");
-	printQueue();
+	error=fopen_s(&Results_w,"Results.txt","w+");//opens Data.txt for filling
+	error=fopen_s(&DataBase_w,"Data.txt","w");//opens Data.txt for filling
+	Adder_1=L1_ADDER;
+	Adder_2=L2_ADDER;
 	printf("\n\nRESULTS:\n");
-	printf("============");
-	printf("\nTAG:%d Index:%d BlockOffSet:%d\n",Tag_bits,Index_bits,BlockOffset_bits);
-	printf("\nreadmisses:%d readhits:%d\nwritemisses:%d writehits:%d\nmodifymisses:%d modifyhits:%d",ReadMiss,ReadHit,WriteMiss,WriteHit,ModifyMiss,ModifyHit);
-	printf("\n\nTotal Misses:%d  Total Hits:%d",Misses,Hits);
-	performance=(float)Hits/((float)Misses+(float)Hits)*100;
-	printf("\nPerformance:%f %%\nFlushes:%d",performance,flushNo-1);
-	printf("\nTotal Cycles:%d",Cycles);
+	 
+	while (Adder_1<=L1_CACHE_SIZE)
+	{	
+		while (Adder_2<=L2_CACHE_SIZE){
+			findTagIndexBlockOffset(Adder_1);  //finds Tag Index and Block Offset of the current cache 
+			fillDataBase(DataBase_w);				   //Random cache action and random numbers in Data.txt
+			error=fopen_s(&DataBase_r,"Data.txt","r");//opens Data.txt for parsing
+			error=fopen_s(&Output_w,"Output.txt","w+");//opens Output.txt for filling
+			TempVictim=Victim_Head.head;
+			createVictim(VICTIM_CACHE_SIZE,TempVictim);
+			Temp1=L1_Head.head;
+			createCache(Adder_1,Temp1);
+			Temp2=L2_Head.head;
+			createCache(L2_CACHE_SIZE,Temp2);
+			//printQueue(L1_Head);
+			//printQueue(L2_Head);
+			for(i=0;i<LinesInDataBase;i++){//loops until the end of Data.txt
+				fillOutput(Output_w);		//fills Output w
+				if(Action=='R'||Action=='M'||Action=='W'){
+					//createAddress();
+					enqueueCache(i,Adder_1,L1_Head);
+				}
+				else{
+					//printf(" \n");
+					//printf("\nOUR CACHE BEFORE #%d FLUSH:\n",flushNo);
+					//printf("======================");
+					//printQueue(L1_Head);
+					free_Cache(L1_Head.head);
+					L1_Head.head=&L1_Tail;
+					L1_Tail.tail=&L1_Head;
+					flushNo++;
+					createCache(Adder_1,Temp1);
+				}
+			}
+			//printQueue();
+			//printf("\n\nOUR CACHE AFTER INPUT:\n");
+			//printf("=====================");
+			//printQueue(L1_Head);
+
+			printf("\n\n\n\nL1_CACHE_SIZE:%d L2_CACHE_SIZE:%d",Adder_1,Adder_2);
+			printf("\t(T:%d,IN:%d,BO:%d)\n",Tag_bits,Index_bits,BlockOffset_bits);
+			printf("================================");
+			printf("\nreadmisses:%d readhits:%d\nwritemisses:%d writehits:%d\nmodifymisses:%d modifyhits:%d",ReadMiss,ReadHit,WriteMiss,WriteHit,ModifyMiss,ModifyHit);
+			printf("\n\nTotal Misses:%d  Total Hits:%d",Misses,Hits);
+			performance=(float)Hits/((float)Misses+(float)Hits)*100;
+			printf("\nPerformance:%f %%\nFlushes:%d",performance,flushNo-1);
+			printf("\nTotal Cycles:%d",Cycles);
+			printf("\nMISSES:\tCompulsory:%d\n\tCapacity:%d\n\tConflict:%d",compulsory,capacity,conflict);
+
+			fprintf(Results_w,"\n\n\n\nL1_CACHE_SIZE:%d L2_CACHE_SIZE:%d",Adder_1,Adder_2);
+			fprintf(Results_w,"\t(T:%d,IN:%d,BO:%d)\n",Tag_bits,Index_bits,BlockOffset_bits);
+			fprintf(Results_w,"============================");
+			fprintf(Results_w,"\nTAG:%d Index:%d BlockOffSet:%d\n",Tag_bits,Index_bits,BlockOffset_bits);
+			fprintf(Results_w,"\nreadmisses:%d readhits:%d\nwritemisses:%d writehits:%d\nmodifymisses:%d modifyhits:%d",ReadMiss,ReadHit,WriteMiss,WriteHit,ModifyMiss,ModifyHit);
+			fprintf(Results_w,"\n\nTotal Misses:%d  Total Hits:%d",Misses,Hits);
+			fprintf(Results_w,"\nPerformance:%f %%\nFlushes:%d",performance,flushNo-1);
+			fprintf(Results_w,"\nTotal Cycles:%d",Cycles);
+			fprintf(Results_w,"\nMISSES:\tCompulsory:%d\n\tCapacity:%d\n\tConflict:%d",compulsory,capacity,conflict);
+			printQueue(L1_Head);
+			printQueue(Victim_Head);
+			free_Cache(L1_Head.head);
+			
+			Adder_2+=L2_ADDER;
+			fclose(Output_w);
+
+			L1_Head.head=&L1_Tail;
+			L1_Tail.tail=&L1_Head;
+			
+			L2_Head.head=&L2_Tail;
+			L2_Tail.tail=&L2_Head;
+			
+			Victim_Head.head=&Victim_Tail;
+			Victim_Tail.tail=&Victim_Head;
+
+			initializer();
+			flushNo=1;
+			fclose(DataBase_r);
+			fclose(DataBase_w);
+		}//end of while(Adder_2<=L2_CACHE_SIZE)
+		Adder_1+=L1_ADDER;
+		Adder_2=L2_ADDER;
+	}//end of while(Adder_1<=L1_CACHE_SIZE)
+	
+
 	fclose(Parameter_r);
-	fclose(DataBase_r);
-	fclose(DataBase_w);
-	fclose(Output_w);
-	free_Cache(Head.head);
+	fclose(Results_w);  
 	_getch();	
 	exit(0);	//exits 0 when everything gone right
 }	//end of main()
@@ -209,6 +312,7 @@ void fillDataBase(FILE *DataBase){
         int y;					
 		int flush_max=MAX_FLUSHES;//max flush into Data.txt will be 1/6'th of total lines
 		int flush_times=0;
+		srand(time(NULL));	
         if(DataBase!=NULL){
              while(i<LinesInDataBase){
                 ch=cacheAction();			//randomly gets an action from Write Read Modify and Flush
@@ -337,8 +441,8 @@ int getLine(FILE *DataBase){
 		FilesLine[i]=ch;		//and puts them into global array FilesLine
 		ch=fgetc(DataBase);	
 		i++;
-		if(i>49){
-						printf("Errors:Words in Database's shouldnt be bigger than 50 characters ");
+		if(i>100){
+						printf("Errors:Words in Database's shouldnt be bigger than 100 characters ");
 						_getch();
 						exit(11);
 					}
@@ -398,7 +502,7 @@ void parseWord(char *characterLine,int i){
 	int k=0;
 	int n=0;
 	for(k=0;k<stringSize(characterLine);k++){//loops as many times as the size of characterLine
-			if(characterLine[k]==' '&&characterLine[k+1]!=' '){//if the current character is space and the next is not knows that it went to the next word
+			if((characterLine[k]==' '||characterLine[k]==',')&&(characterLine[k+1]!=' '&&characterLine[k+1]!=',')){//if the current character is space and the next is not knows that it went to the next word
 					i--;									   //minus 1 from i which is the pointer to the current word
 					k++;									   //starts the new word
 			}
@@ -415,15 +519,15 @@ void parseWord(char *characterLine,int i){
 	equalStrings(WordInLine,ch1);//equals ch1 to global variable WordInLine
 }
 //** Input:a deciman number Output: the log of this number base 2 **//
-int log_2(int n){
-	int p=0;
+float log_2(float n){
+	float p=0;
 	p=log(n)/log(2);//this is the formula for base 2
 	return p;
 }
 //** Based on the Parameters finds the actual tag index and block offset of the current cache  **//
-void findTagIndexBlockOffset(){
+void findTagIndexBlockOffset(int CACHE_SIZE){
 	Ram_bits=log_2(RAM_SIZE/WORD_SIZE);		//gets the number of ram bits into the global variable Ram_bits
-	Cache_bits=log_2(CACHE_SIZE/WORD_SIZE); //gets the number of Cache bits into the global variable Cache_bits
+	Cache_bits=ceil(log_2((float)CACHE_SIZE/(float)WORD_SIZE)); //gets the number of Cache bits into the global variable Cache_bits
 	MAX_NUMBER=pow(2,Ram_bits)-1;			//gets the maximum into the global variable MAX_NUMBER
 	LinesInDataBase=(MAX_NUMBER+1)*DATA_FILL_NUMBER;//puts the total lines of Data.txt into the global variable LinesInDataBase
 	
@@ -450,7 +554,8 @@ void findTagIndexBlockOffset(){
 //** find the errors of Parameters
 void findErrors(){
 	//Parameters are passed in local variables
-	int cachesize=CACHE_SIZE;
+	int cachesize=L1_CACHE_SIZE;
+	int cachesize2=L2_CACHE_SIZE;
 	int ramsize=RAM_SIZE;
 	int wordsize=WORD_SIZE;
 	int wordsperblock=WORDS_PER_BLOCK;
@@ -472,16 +577,45 @@ void findErrors(){
 				printf("Error:WRITE_TO_RAM should be bigger than zero\n");
 				iserror=1;
 	}
-	if(ACCESS_CACHE<=0){//cache size cant be bigger than Ram size
-				printf("Error:ACCESS_CACHE should be bigger than zero\n");
+
+	if(cachesize>=ramsize){//cache size cant be bigger than Ram size
+				printf("Error:RAM_SIZE should be bigger than L1_CACHE_SIZE\n");
 				iserror=1;
 	}
-	if(cachesize>=ramsize){//cache size cant be bigger than Ram size
-				printf("Error:RAM_SIZE should be bigger than CACHE_SIZE\n");
+	if(cachesize2>=ramsize){//cache size cant be bigger than Ram size
+				printf("Error:RAM_SIZE should be bigger than L2_CACHE_SIZE\n");
+				iserror=1;
+	}
+	if(!isLog_2(cachesize2)){//cannot have cache size which is not a power of 2
+				printf("Error:L2_CACHE_SIZE should be a power of 2\n");
 				iserror=1;
 	}
 	if(!isLog_2(cachesize)){//cannot have cache size which is not a power of 2
-				printf("Error:CACHE_SIZE should be a power of 2\n");
+				printf("Error:L1_CACHE_SIZE should be a power of 2\n");
+				iserror=1;
+	}
+	if(!isLog_2(L2_ADDER)){//cannot have cache size which is not a power of 2
+				printf("Error:L2_CACHE_SIZE should be a power of 2\n");
+				iserror=1;
+	}
+	if(!isLog_2(VICTIM_CACHE_SIZE)&&(VICTIM_CACHE==true)){//cannot have cache size which is not a power of 2
+				printf("Error:VICTIM_CACHE_SIZE should be a power of 2\n");
+				iserror=1;
+	}
+	if(!isLog_2(L1_ADDER)){//cannot have cache size which is not a power of 2
+				printf("Error:L1_CACHE_SIZE should be a power of 2\n");
+				iserror=1;
+	}
+	if(L1_ADDER>cachesize){
+				printf("Error:L1_CACHE_SIZE should be BIGGER than L1_ADDER\n");
+				iserror=1;
+	}
+	if(L2_ADDER>cachesize2){
+				printf("Error:L2_CACHE_SIZE should be BIGGER than L2_ADDER\n");
+				iserror=1;
+	}
+	if(cachesize2<cachesize){
+				printf("Error:L2_CACHE_SIZE should be bigger than L2_CACHE_SIZE\n");
 				iserror=1;
 	}
 	if(!isLog_2(ramsize)){//cannot have Ram size which is not a power of 2
@@ -502,6 +636,14 @@ void findErrors(){
 	}
 	else if(cachesize<(WORDS_PER_BLOCK*WORD_SIZE)){
 				printf("Error:CACHE_SIZE should be bigger than WORDS_PER_BLOCK*WORD_SIZE\n");
+				iserror=1;
+	}
+	if(SET_ASSOCIATIVE&&L1_ADDER<(WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE)){//data should fit into cache size
+				printf("Error:L1_CACHE_SIZE should be bigger than WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE\n");
+				iserror=1;;
+	}
+	else if(L1_ADDER<(WORDS_PER_BLOCK*WORD_SIZE)){
+				printf("Error:L1_CACHE_SIZE should be bigger than WORDS_PER_BLOCK*WORD_SIZE\n");
 				iserror=1;
 	}
 	if(!isLog_2(WORD_SIZE)){//cannot have words per block which are not a power of 2
@@ -556,6 +698,7 @@ int isLog_2(int parameter){
 void getParameters(FILE *Parameter){
 	char Param_str[25]={NULL};
 	char Param_num[50]={NULL};
+	char Param_num2[50]={NULL};
 	char Param_Line[100]={NULL};
 	int LastLine=0;
 	getLine(Parameter);
@@ -565,7 +708,9 @@ void getParameters(FILE *Parameter){
 		equalStrings(Param_str,WordInLine);
 		parseWord(Param_Line,1);
 		equalStrings(Param_num,WordInLine);
-		guessParameter(Param_str,Param_num);	
+		parseWord(Param_Line,2);
+		equalStrings(Param_num2,WordInLine);
+		guessParameter(Param_str,Param_num,Param_num2);	
 		printf("\n");
 		
 		if(LastLine==1)break;
@@ -575,11 +720,60 @@ void getParameters(FILE *Parameter){
 
 }
 //** Helps getParameter to get the right parameter **//
-void guessParameter(char *String,char *Number){
+void guessParameter(char *String,char *Number,char *Number2){
 	if(isStringEqual(String,"RAM_SIZE"))
 		RAM_SIZE=atoi(Number);
-	if(isStringEqual(String,"CACHE_SIZE"))
-		CACHE_SIZE=atoi(Number);
+	if(isStringEqual(String,"L1_CACHE_SIZE")){
+		L1_CACHE_SIZE=atoi(Number);
+		L1_ADDER=atoi(Number2);
+	}
+	if(isStringEqual(String,"L2_CACHE_SIZE")){
+		L2_CACHE_SIZE=atoi(Number);
+		L2_ADDER=atoi(Number2);
+	}
+
+	if(isStringEqual(String,"VICTIM_CACHE_SIZE")){
+		VICTIM_CACHE_SIZE=atoi(Number);
+	}	
+	if(isStringEqual(String,"VICTIM_CACHE")){
+		if(isStringEqual(Number,"ENABLE"))
+			VICTIM_CACHE=true;
+		else
+		if(isStringEqual(Number,"DISABLE"))
+			VICTIM_CACHE=false;
+		else
+			{
+			printf("Error:VICTIM_CACHE_SIZE should be ENABLE OR DISABLE\n");
+			_getch();
+			exit(1);
+			}
+	}
+	if(isStringEqual(String,"L2_CACHE")){
+		if(isStringEqual(Number,"ENABLE"))
+			L2_CACHE=true;
+		else
+		if(isStringEqual(Number,"DISABLE"))
+			L2_CACHE=false;
+		else
+			{
+			printf("Error:L2_CACHE should be ENABLE OR DISABLE\n");
+			_getch();
+			exit(1);
+			}
+	}
+	if(isStringEqual(String,"CACHE_MODE")){
+		if(isStringEqual(Number,"INCLUSIVE"))
+			CACHE_MODE=true;
+		else
+		if(isStringEqual(Number,"EXCLUSIVE"))
+			CACHE_MODE=false;
+		else
+			{
+			printf("Error:CACHE should be INCLUSIVE OR EXCLUSIVE\n");
+			_getch();
+			exit(1);
+			}
+	}
 	if(isStringEqual(String,"WORD_SIZE"))
 		WORD_SIZE=atoi(Number);
 	if(isStringEqual(String,"FULL_ASSOCIATIVE"))
@@ -612,8 +806,6 @@ void guessParameter(char *String,char *Number){
 		WRITE_TO_RAM=atoi(Number);
 	if(isStringEqual(String,"WRITE_TO_CACHE"))
 		WRITE_TO_CACHE=atoi(Number);
-	if(isStringEqual(String,"ACCESS_CACHE"))
-		ACCESS_CACHE=atoi(Number);
 
 	printf("%s ",String);
 	if(String[0]!=NULL){
@@ -666,7 +858,7 @@ int BintoInt(int *Bits){
 	return Int;
 }
 //** prints a queue from head to tail **//
-void printQueue(){
+void printQueue(struct Cache Head){
 	struct Cache *Temp;
 	int i=0;
 	int indexpower=pow(2,Index_bits);
@@ -692,16 +884,17 @@ void printQueue(){
 		if(Temp->Index==-1)
 			printf("%3d:%d",Temp->Tag,Temp->BlockOffSet);
 		else
-			printf("%3d:%d:%d",Temp->Tag,Temp->Index,Temp->BlockOffSet);
+			printf("%3d:%d:%d",Temp->Tag,Temp->BlockOffSet,Temp->Index);
 
 			printf(" ");
 		Temp=Temp->head;
 		i++;
 	}
 
+
 }
 //** Creates the Cache depenting on the parameters **//
-void createCache(){
+void createCache(int CACHE_SIZE,struct Cache *Tail){
 	struct Cache *newCache;
 	int i=0;
 	int tag;
@@ -710,9 +903,10 @@ void createCache(){
 	int index=0;
 	int wayno=0;
 	int waycount=0;
+	int CACHEBITS=log_2(CACHE_SIZE/WORD_SIZE);
 	int indexpower=pow(2,Index_bits+BlockOffset_bits);
 	int bopower=pow(2,BlockOffset_bits);
-	int size=pow(2,Cache_bits);
+	int size=CACHE_SIZE/WORD_SIZE;
 	if(SET_ASSOCIATIVE)
 		AddressesPerWay=CACHE_SIZE/SET_ASSOCIATIVE_WAYS/WORDS_PER_BLOCK/WORD_SIZE;
 	for(i=0;i<size;i++){
@@ -730,17 +924,17 @@ void createCache(){
 			bo=i%bopower;
 
 		newCache=(struct Cache*)malloc((sizeof(struct Cache)));
-		newCache->Valid=0;
+		newCache->Valid=false;
 		newCache->Tag=tag;
 		newCache->Index=index;
 		newCache->BlockOffSet=bo;
 		newCache->Age=-1;
 		newCache->Touched=-1;
 		newCache->Dirty=1;
-		newCache->head=&Tail;
-		newCache->tail=Tail.tail;
-		Tail.tail->head=newCache;
-		Tail.tail=newCache;
+		newCache->head=Tail;
+		newCache->tail=Tail->tail;
+		Tail->tail->head=newCache;
+		Tail->tail=newCache;
 		if(SET_ASSOCIATIVE==1){
 			newCache->Way=wayno;
 			if(newCache->Index!=newCache->tail->Index){
@@ -753,7 +947,7 @@ void createCache(){
 	}
 }
 //** enqueues a new address into Cache **//
-void enqueueCache(int size){
+void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 	struct Cache *newCache;
 	struct Cache *Temp;
 	struct Cache *PLACE;
@@ -768,18 +962,18 @@ void enqueueCache(int size){
 	PLACE= (struct Cache*)malloc((sizeof(struct Cache)));
 	PLACE=Head.head;
 	newCache=(struct Cache*)malloc((sizeof(struct Cache)));
-	newCache->Valid=1;
+	newCache->Valid=true;
 	newCache->Tag=Tag_cache;
 	newCache->Index=Index_cache;
 	newCache->BlockOffSet=BlockOffset_cache;
 	newCache->Age=LinesInDataBase-size;
-	place=enqueuePlace(newCache->Tag,newCache->Index,newCache->BlockOffSet,newCache->Age,newCache->Touched);
+	place=enqueuePlace(newCache->Tag,newCache->Index,newCache->BlockOffSet,newCache->Age,newCache->Touched,L1_CACHE_SIZE,Head);
 	for(i=0;i<place;i++){
 		Temp=Temp->head;
 	}
 	//printf("%d,%d,%d->%d,%d,%d\n",newCache->Tag,newCache->Index,newCache->BlockOffSet,Temp->Tag,Temp->Index,Temp->BlockOffSet);
 	if(Action=='R'){
-		if(Temp->Tag==newCache->Tag&&Temp->Valid==1){
+		if(Temp->Tag==newCache->Tag&&Temp->Valid==true){
 			ReadHit++;
 			Hits++;
 			Temp->Touched=newCache->Age;
@@ -820,7 +1014,7 @@ void enqueueCache(int size){
 		}
 	}
 	if(Action=='W'){
-		if(Temp->Tag==newCache->Tag&&Temp->Valid==1){
+		if(Temp->Tag==newCache->Tag&&Temp->Valid==true){
 			WriteHit++;
 			Hits++;
 			read_write_hit_miss=3;
@@ -832,21 +1026,25 @@ void enqueueCache(int size){
 			}
 		}
 		else{
+			enqueueVictim(Temp->Tag,Temp->Index,Temp->BlockOffSet,Temp->Age,Temp->Touched);
 			fprintf(Output_w,"\tMISS:");
 			if(Temp->Age==-1){
 				fprintf(Output_w,"\tCOMPULSORY\tREPLACE:(UNKOWN)");
+				compulsory++;
 			}
 			else{
 				if(DIRECT_MAPPED){
-					fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
+					fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
 					printBinaryNumber(Temp->Tag,Temp->Index,Temp->BlockOffSet);
 					fprintf(Output_w,")\t");
+					conflict++;
 				}
 				if(SET_ASSOCIATIVE||FULL_ASSOCIATIVE){
 					if(!isStringEqual(POLICY,"RANDOM")){
-						fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
+						fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
 						printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
 						fprintf(Output_w,")\t");
+						capacity++;
 					}
 					else{
 						PLACE=Head.head;
@@ -859,17 +1057,19 @@ void enqueueCache(int size){
 							fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
 							printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
 							fprintf(Output_w,")\t");
+							conflict++;
 						}
 						else{
 							fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
 							printBinaryNumber(Temp->Tag,Temp->Index,Temp->BlockOffSet);
 							fprintf(Output_w,")\t");
+							capacity++;
 						}
 					}
 				}
 			}
 			Temp->Tag=newCache->Tag;
-			Temp->Valid=1;
+			Temp->Valid=true;
 			Temp->Age=newCache->Age;
 			Temp->Touched=newCache->Age;
 			read_write_hit_miss=4;
@@ -878,7 +1078,7 @@ void enqueueCache(int size){
 		}
 	}
 	if(Action=='M'){
-		if(Temp->Tag==newCache->Tag&&Temp->Valid==1){
+		if(Temp->Tag==newCache->Tag&&Temp->Valid==true){
 			ModifyHit++;
 			Hits++;
 			Temp->Touched=newCache->Age;
@@ -926,7 +1126,7 @@ void enqueueCache(int size){
 	free((void*)newCache);
 }
 //** finds a place for new address  int the  into Cache **//
-int enqueuePlace(int tag,int index,int bo,int age,int touch){
+int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struct Cache Head){
 	struct Cache *Temp;
 	int writeplace=0;
 	int i=0,j=0;
@@ -952,7 +1152,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch){
 
 	if(FULL_ASSOCIATIVE&&isStringEqual(POLICY,"FIFO")){	
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==1&&Temp->BlockOffSet==bo){
+			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo){
 				found=1;
 				writeplace=j;
 			}
@@ -988,7 +1188,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch){
 	if(FULL_ASSOCIATIVE&&isStringEqual(POLICY,"RANDOM")){	
 		found=0;
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==1&&Temp->BlockOffSet==bo){
+			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo){
 				found=1;
 				writeplace=j;
 			}
@@ -1017,7 +1217,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch){
 	if(FULL_ASSOCIATIVE&&isStringEqual(POLICY,"LRU")){	
 		found=0;
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==1&&Temp->BlockOffSet==bo){
+			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo){
 				found=1;
 				writeplace=j;
 			}
@@ -1054,7 +1254,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch){
 
 	if(SET_ASSOCIATIVE&&isStringEqual(POLICY,"FIFO")){
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==1&&Temp->BlockOffSet==bo&&Temp->Index==index){
+			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo&&Temp->Index==index){
 				found=1;
 				writeplace=j;
 			}
@@ -1090,7 +1290,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch){
 	if(SET_ASSOCIATIVE&&isStringEqual(POLICY,"RANDOM")){	
 		found=0;
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==1&&Temp->BlockOffSet==bo&&Temp->Index==index){
+			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo&&Temp->Index==index){
 				found=1;
 				writeplace=j;
 			}
@@ -1215,4 +1415,96 @@ void free_Cache (struct Cache *chain){
 		chain=chain->head;
 		free((void*)chain->tail);
 	}
+}
+//**Initializes every variable needed for next loop**/
+void initializer(){
+Hits=0;
+Misses=0;
+ReadMiss=0;
+WriteMiss=0;
+ModifyMiss=0;
+ReadHit=0;
+WriteHit=0;
+ModifyHit=0;
+Cycles=0;
+compulsory=0;
+conflict=0;
+capacity=0;
+}
+
+void createVictim(int CACHE_SIZE,struct Cache *Tail){
+	struct Cache *newCache;
+	int i=0;
+	int CACHEBITS=log_2(CACHE_SIZE/WORD_SIZE);
+	int size=CACHE_SIZE/WORD_SIZE;
+	for(i=0;i<size;i++){
+		newCache=(struct Cache*)malloc((sizeof(struct Cache)));
+		newCache->Valid=false;
+		newCache->Tag=-1;
+		newCache->Index=-1;
+		newCache->BlockOffSet=-1;
+		newCache->Age=-1;
+		newCache->Touched=-1;
+		newCache->Dirty=1;
+		newCache->Way=-1;
+		newCache->head=Tail;
+		newCache->tail=Tail->tail;
+		Tail->tail->head=newCache;
+		Tail->tail=newCache;
+	}
+}
+
+int enqueueVictim(int tag,int index,int bo,int age,int touch){
+	struct Cache *Temp;
+	struct Cache *Temp1;
+	int writeplace=0;
+	int i=0,j=0;
+	int found=0;
+	int number=0;
+	int random=0;
+	int decisionplace=0;
+	Temp= (struct Cache*)malloc((sizeof(struct Cache)));
+	Temp=Victim_Head.head;
+	Temp1= (struct Cache*)malloc((sizeof(struct Cache)));
+	Temp1=Victim_Head.head;
+		while(Temp->head!=NULL){
+			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo&&Temp->Index==index){
+				found=1;
+				writeplace=j;
+			}
+			j++;
+			Temp=Temp->head;
+		}
+		if(found!=1){
+			Temp=Victim_Head.head;
+			while(Temp->head!=NULL){
+				if(Temp->BlockOffSet==bo&&Temp->Age==-1&&Temp->Index==index){
+					writeplace=number;
+					found=2;
+				}
+				Temp=Temp->head;
+				number++;
+			}
+			if(found!=1&&found!=2){
+				number=0;
+				Temp=Victim_Head.head;
+				while(Temp->head!=NULL){
+					if(Temp->BlockOffSet==bo&&age>=Temp->Age){
+						age=Temp->Age;
+						writeplace=number;
+					}
+				Temp=Temp->head;
+				number++;
+				}
+			}
+		}
+	for(i=0;i<writeplace;i++){
+	Temp1=Temp1->head;
+	}
+	Temp1->Tag=tag;
+	Temp1->Valid=true;
+	Temp1->BlockOffSet=bo;
+	Temp1->Age=age;
+	Temp1->Touched=touch;
+	return writeplace;
 }
