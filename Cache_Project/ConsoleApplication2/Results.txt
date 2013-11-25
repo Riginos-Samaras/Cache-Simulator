@@ -2,288 +2,120 @@
 
 
 
-L1_CACHE_SIZE:16 L2_CACHE_SIZE:16	(T:5,IN:1,BO:0)
-============================
-TAG:5 Index:1 BlockOffSet:0
+L1_CACHE_SIZE:32 , L2_CACHE_SIZE:32 	(T:5,IN:4,BO:0)	(T:5,IN:4,BO:0)
+================================
+TAG:5 Index:4 BlockOffSet:0
 
-readmisses:55 readhits:8
-writemisses:62 writehits:5
-modifymisses:57 modifyhits:5
+ReadMisses:475 ReadHits:20
+WriteMisses:454 WriteHits:15
+ModifyMisses:479 Modify_Hits:21
+Write_Victim_Hits:8 Read_Victim_Hit:18
+Write_L2_Hits:18 Read_L2_Hit:28 
 
-Total Misses:174  Total Hits:18
-Performance:9.375000 %
+Total Misses:1408  Total Hits:128
+Performance:8.333334 %
 Flushes:0
-Total Cycles:1104
-MISSES:	Compulsory:4
-	Capacity:58
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:16 L2_CACHE_SIZE:32	(T:5,IN:1,BO:0)
-============================
-TAG:5 Index:1 BlockOffSet:0
-
-readmisses:55 readhits:8
-writemisses:62 writehits:5
-modifymisses:57 modifyhits:5
-
-Total Misses:174  Total Hits:18
-Performance:9.375000 %
-Flushes:0
-Total Cycles:1104
-MISSES:	Compulsory:4
-	Capacity:58
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:16 L2_CACHE_SIZE:48	(T:5,IN:1,BO:0)
-============================
-TAG:5 Index:1 BlockOffSet:0
-
-readmisses:55 readhits:8
-writemisses:62 writehits:5
-modifymisses:57 modifyhits:5
-
-Total Misses:174  Total Hits:18
-Performance:9.375000 %
-Flushes:0
-Total Cycles:1104
-MISSES:	Compulsory:4
-	Capacity:58
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:16 L2_CACHE_SIZE:64	(T:5,IN:1,BO:0)
-============================
-TAG:5 Index:1 BlockOffSet:0
-
-readmisses:55 readhits:8
-writemisses:62 writehits:5
-modifymisses:57 modifyhits:5
-
-Total Misses:174  Total Hits:18
-Performance:9.375000 %
-Flushes:0
-Total Cycles:1104
-MISSES:	Compulsory:4
-	Capacity:58
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:32 L2_CACHE_SIZE:16	(T:4,IN:2,BO:0)
-============================
-TAG:4 Index:2 BlockOffSet:0
-
-readmisses:50 readhits:13
-writemisses:60 writehits:7
-modifymisses:49 modifyhits:13
-
-Total Misses:159  Total Hits:33
-Performance:17.187500 %
-Flushes:0
-Total Cycles:1090
-MISSES:	Compulsory:8
-	Capacity:52
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:32 L2_CACHE_SIZE:32	(T:4,IN:2,BO:0)
-============================
-TAG:4 Index:2 BlockOffSet:0
-
-readmisses:50 readhits:13
-writemisses:60 writehits:7
-modifymisses:49 modifyhits:13
-
-Total Misses:159  Total Hits:33
-Performance:17.187500 %
-Flushes:0
-Total Cycles:1090
-MISSES:	Compulsory:8
-	Capacity:52
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:32 L2_CACHE_SIZE:48	(T:4,IN:2,BO:0)
-============================
-TAG:4 Index:2 BlockOffSet:0
-
-readmisses:50 readhits:13
-writemisses:60 writehits:7
-modifymisses:49 modifyhits:13
-
-Total Misses:159  Total Hits:33
-Performance:17.187500 %
-Flushes:0
-Total Cycles:1090
-MISSES:	Compulsory:8
-	Capacity:52
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:32 L2_CACHE_SIZE:64	(T:4,IN:2,BO:0)
-============================
-TAG:4 Index:2 BlockOffSet:0
-
-readmisses:50 readhits:13
-writemisses:60 writehits:7
-modifymisses:49 modifyhits:13
-
-Total Misses:159  Total Hits:33
-Performance:17.187500 %
-Flushes:0
-Total Cycles:1090
-MISSES:	Compulsory:8
-	Capacity:52
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:48 L2_CACHE_SIZE:16	(T:4,IN:2,BO:0)
-============================
-TAG:4 Index:2 BlockOffSet:0
-
-readmisses:50 readhits:13
-writemisses:58 writehits:9
-modifymisses:47 modifyhits:15
-
-Total Misses:155  Total Hits:37
-Performance:19.270832 %
-Flushes:0
-Total Cycles:1076
-MISSES:	Compulsory:12
-	Capacity:46
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:48 L2_CACHE_SIZE:32	(T:4,IN:2,BO:0)
-============================
-TAG:4 Index:2 BlockOffSet:0
-
-readmisses:50 readhits:13
-writemisses:58 writehits:9
-modifymisses:47 modifyhits:15
-
-Total Misses:155  Total Hits:37
-Performance:19.270832 %
-Flushes:0
-Total Cycles:1076
-MISSES:	Compulsory:12
-	Capacity:46
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:48 L2_CACHE_SIZE:48	(T:4,IN:2,BO:0)
-============================
-TAG:4 Index:2 BlockOffSet:0
-
-readmisses:50 readhits:13
-writemisses:58 writehits:9
-modifymisses:47 modifyhits:15
-
-Total Misses:155  Total Hits:37
-Performance:19.270832 %
-Flushes:0
-Total Cycles:1076
-MISSES:	Compulsory:12
-	Capacity:46
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:48 L2_CACHE_SIZE:64	(T:4,IN:2,BO:0)
-============================
-TAG:4 Index:2 BlockOffSet:0
-
-readmisses:50 readhits:13
-writemisses:58 writehits:9
-modifymisses:47 modifyhits:15
-
-Total Misses:155  Total Hits:37
-Performance:19.270832 %
-Flushes:0
-Total Cycles:1076
-MISSES:	Compulsory:12
-	Capacity:46
-	Conflict:0
-
-
-
-L1_CACHE_SIZE:64 L2_CACHE_SIZE:16	(T:3,IN:3,BO:0)
-============================
-TAG:3 Index:3 BlockOffSet:0
-
-readmisses:46 readhits:17
-writemisses:54 writehits:13
-modifymisses:44 modifyhits:18
-
-Total Misses:144  Total Hits:48
-Performance:25.000000 %
-Flushes:0
-Total Cycles:1048
+Total Cycles:12593
 MISSES:	Compulsory:16
-	Capacity:38
-	Conflict:0
+	Capacity:0
+	Conflict:446
 
 
 
-L1_CACHE_SIZE:64 L2_CACHE_SIZE:32	(T:3,IN:3,BO:0)
-============================
-TAG:3 Index:3 BlockOffSet:0
+L1_CACHE_SIZE:32 , L2_CACHE_SIZE:64 	(T:5,IN:4,BO:0)	(T:4,IN:5,BO:0)
+================================
+TAG:5 Index:4 BlockOffSet:0
 
-readmisses:46 readhits:17
-writemisses:54 writehits:13
-modifymisses:44 modifyhits:18
+ReadMisses:462 ReadHits:22
+WriteMisses:438 WriteHits:17
+ModifyMisses:458 Modify_Hits:21
+Write_Victim_Hits:10 Read_Victim_Hit:16
+Write_L2_Hits:30 Read_L2_Hit:62 
 
-Total Misses:144  Total Hits:48
-Performance:25.000000 %
+Total Misses:1358  Total Hits:178
+Performance:11.588541 %
 Flushes:0
-Total Cycles:1048
+Total Cycles:12183
 MISSES:	Compulsory:16
-	Capacity:38
-	Conflict:0
+	Capacity:0
+	Conflict:430
 
 
 
-L1_CACHE_SIZE:64 L2_CACHE_SIZE:48	(T:3,IN:3,BO:0)
-============================
-TAG:3 Index:3 BlockOffSet:0
+L1_CACHE_SIZE:64 , L2_CACHE_SIZE:64 	(T:4,IN:5,BO:0)	(T:4,IN:5,BO:0)
+================================
+TAG:4 Index:5 BlockOffSet:0
 
-readmisses:46 readhits:17
-writemisses:54 writehits:13
-modifymisses:44 modifyhits:18
+ReadMisses:448 ReadHits:30
+WriteMisses:428 WriteHits:29
+ModifyMisses:450 Modify_Hits:32
+Write_Victim_Hits:6 Read_Victim_Hit:8
+Write_L2_Hits:32 Read_L2_Hit:73 
 
-Total Misses:144  Total Hits:48
-Performance:25.000000 %
+Total Misses:1326  Total Hits:210
+Performance:13.671875 %
 Flushes:0
-Total Cycles:1048
-MISSES:	Compulsory:16
-	Capacity:38
-	Conflict:0
+Total Cycles:11883
+MISSES:	Compulsory:32
+	Capacity:0
+	Conflict:414
 
 
 
-L1_CACHE_SIZE:64 L2_CACHE_SIZE:64	(T:3,IN:3,BO:0)
-============================
-TAG:3 Index:3 BlockOffSet:0
+L1_CACHE_SIZE:32 , L2_CACHE_SIZE:128 	(T:5,IN:4,BO:0)	(T:3,IN:6,BO:0)
+================================
+TAG:5 Index:4 BlockOffSet:0
 
-readmisses:46 readhits:17
-writemisses:54 writehits:13
-modifymisses:44 modifyhits:18
+ReadMisses:439 ReadHits:21
+WriteMisses:410 WriteHits:16
+ModifyMisses:440 Modify_Hits:20
+Write_Victim_Hits:9 Read_Victim_Hit:18
+Write_L2_Hits:60 Read_L2_Hit:103 
 
-Total Misses:144  Total Hits:48
-Performance:25.000000 %
+Total Misses:1289  Total Hits:247
+Performance:16.080730 %
 Flushes:0
-Total Cycles:1048
+Total Cycles:11550
 MISSES:	Compulsory:16
-	Capacity:38
-	Conflict:0
+	Capacity:0
+	Conflict:402
+
+
+
+L1_CACHE_SIZE:64 , L2_CACHE_SIZE:128 	(T:4,IN:5,BO:0)	(T:3,IN:6,BO:0)
+================================
+TAG:4 Index:5 BlockOffSet:0
+
+ReadMisses:427 ReadHits:35
+WriteMisses:407 WriteHits:31
+ModifyMisses:427 Modify_Hits:31
+Write_Victim_Hits:7 Read_Victim_Hit:13
+Write_L2_Hits:50 Read_L2_Hit:108 
+
+Total Misses:1261  Total Hits:275
+Performance:17.903645 %
+Flushes:0
+Total Cycles:11429
+MISSES:	Compulsory:32
+	Capacity:0
+	Conflict:393
+
+
+
+L1_CACHE_SIZE:128 , L2_CACHE_SIZE:128 	(T:3,IN:6,BO:0)	(T:3,IN:6,BO:0)
+================================
+TAG:3 Index:6 BlockOffSet:0
+
+ReadMisses:398 ReadHits:72
+WriteMisses:379 WriteHits:63
+ModifyMisses:397 Modify_Hits:66
+Write_Victim_Hits:0 Read_Victim_Hit:1
+Write_L2_Hits:53 Read_L2_Hit:107 
+
+Total Misses:1174  Total Hits:362
+Performance:23.567707 %
+Flushes:0
+Total Cycles:10783
+MISSES:	Compulsory:64
+	Capacity:0
+	Conflict:353

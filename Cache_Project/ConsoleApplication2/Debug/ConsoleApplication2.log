@@ -1,4 +1,4 @@
-﻿Build started 11/22/2013 5:45:01 PM.
+﻿Build started 25/11/2013 1:41:33 PM.
      1>Project "C:\Users\Riginos\Documents\Visual Studio 2012\Projects\main\Cache_Project\ConsoleApplication2\ConsoleApplication2.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W0 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TC /analyze- /errorReport:prompt cache.c

@@ -17,6 +17,8 @@ typedef int bool;
 int RAM_SIZE=0;
 int	L1_CACHE_SIZE=0;
 int L2_CACHE_SIZE=0;
+int L1_START_SIZE=0;
+int L2_START_SIZE=0;
 int L1_ADDER=0;
 int L2_ADDER=0;
 int VICTIM_CACHE_SIZE=0;
@@ -35,10 +37,17 @@ bool WRITE_BACK=false;
 bool WRITE_THROUGH=false;
 bool WRITE_ALLOCATE=false;
 char POLICY[10]={NULL};
+
 int READ_FROM_CACHE=0;
+int READ_FROM_L2_CACHE=0;
+int READ_FROM_VICTIM=0;
 int READ_FROM_RAM=0;
-int WRITE_TO_RAM=0;
+
 int WRITE_TO_CACHE=0;
+int WRITE_TO_L2_CACHE=0;
+int WRITE_TO_VICTIM=0;
+int WRITE_TO_RAM=0;
+
 
 
 /*****FILES*****/
@@ -61,19 +70,21 @@ void printString(char *);				 //Input:a string Output: prints that String
 void printBinaryNumber(int,int,int);
 void parseWord(char*,int);				 //Input: an integer n and a line of characters and returns the n'th word
 int log_2(int);							 //Input:a deciman number Output: the log of this number base 2
+void findTagIndexBlockOffset_L2(int);
 void findTagIndexBlockOffset(int);		     //Based on the Parameters finds the actual tag index and block offset of the current cache 
 void findErrors();		//find the errors of Parameters
 int isLog_2(int);		//returns 1 if an integer is log of 2 else returns 0
 void getParameters(FILE*);
-void guessParameter(char *,char *);
+void findvaluesinL2(int,int);
+void guessParameter(char *,char *,char *);
 int isStringEqual(char *,char *);
 int BintoInt(int *);
 void enqueueCache(int ,int,struct Cache);
 void printQueue(struct Cache);
-void createCache(int,struct Cache *);
+void createCache(int,struct Cache *,int l1_l2);
 void createVictim(int,struct Cache *);
 void initializer();
-int enqueuePlace(int,int,int,int,int,int,struct Cache);
+int enqueuePlace(int,int,int,int,int,int,struct Cache,int);
 int guessCycles(int,int);
 void free_Cache (struct Cache *chain);
 int enqueueVictim( int,int,int,int,int);
@@ -95,6 +106,7 @@ struct Cache
 
 
 int BinaryNumber[50];		//the binary number saved by the function decToInt
+int BinaryNumber_L2[50];		//the binary number saved by the function decToInt
 char FilesLine[100]={NULL};	//each line of the DataBase is saved in this String
 char WordInLine[50]={NULL};	//the word taken each time from FilesLine
 int LinesInDataBase=0;	//The number of lines filled in files
@@ -104,13 +116,23 @@ int Cache_bits=0;		//Cache bits are saved by that global variable
 int Tag_bits=0;			//Tag bits are saved by that global variable 
 int Index_bits=0;		//Index bits are saved by that global variable 
 int BlockOffset_bits=0;	//Block offset bits are saved by that global variable 
+int Cache_bits_L2=0;		//Cache bits are saved by that global variable 
+int Tag_bits_L2=0;			//Tag bits are saved by that global variable 
+int Index_bits_L2=0;		//Index bits are saved by that global variable 
+int BlockOffset_bits_L2=0;	//Block offset bits are saved by that global variable 
 int Way=0;				//The way in set assosiative that address is refered to
 int full_associative_place;
+bool found_in_L2=false;
+bool found_in_L1=false;
 
 char Action;
-int Tag_cache;
-int Index_cache;
-int BlockOffset_cache;
+int Tag_cache=0;
+int Index_cache=0;
+int BlockOffset_cache=0;
+
+int Tag_cache_L2=0;
+int Index_cache_L2=0;
+int BlockOffset_cache_L2=0;
 
 /*****RESULT VARIABLES*****/
 int Hits=0;
@@ -120,6 +142,10 @@ int WriteMiss=0;
 int ModifyMiss=0;
 int ReadHit=0;
 int WriteHit=0;
+int WriteHitofVictim=0;
+int ReadHittoVictim=0;
+int	ReadHittoL2=0;
+int	WriteHittoL2=0;
 int ModifyHit=0;
 int Cycles=0;
 int compulsory=0;
@@ -181,29 +207,44 @@ int main(int argc, char ** argv){
 	error=fopen_s(&Parameter_r,"Parameters.txt","r+");//opens Data.txt for filling
 	printf("PARAMETERS:\n==========\n");
 	getParameters(Parameter_r);
-	
-	printf("\nTotal Cycles:%d %d",L1_CACHE_SIZE);
-	printf("\n\n");
 	findErrors();
 	error=fopen_s(&Results_w,"Results.txt","w+");//opens Data.txt for filling
 	error=fopen_s(&DataBase_w,"Data.txt","w");//opens Data.txt for filling
-	Adder_1=L1_ADDER;
-	Adder_2=L2_ADDER;
+	error=fopen_s(&Output_w,"Output.txt","w+");//opens Output.txt for filling
+	Adder_1=L1_START_SIZE ;
+	Adder_2=L2_START_SIZE;
 	printf("\n\nRESULTS:\n");
 	 
-	while (Adder_1<=L1_CACHE_SIZE)
+	while (Adder_2<=L2_CACHE_SIZE)
 	{	
-		while (Adder_2<=L2_CACHE_SIZE){
+		if(!isLog_2(Adder_2)||Adder_1>Adder_2){
+				Adder_2+=L2_ADDER;
+				continue;
+			}
+		findTagIndexBlockOffset_L2(Adder_2);  //finds Tag Index and Block Offset of the current cache 
+		while (Adder_1<=L1_CACHE_SIZE){
+			if(!isLog_2(Adder_1)||Adder_1>Adder_2&&L2_CACHE){
+				Adder_1+=L1_ADDER;
+				continue;
+			}
+
 			findTagIndexBlockOffset(Adder_1);  //finds Tag Index and Block Offset of the current cache 
 			fillDataBase(DataBase_w);				   //Random cache action and random numbers in Data.txt
 			error=fopen_s(&DataBase_r,"Data.txt","r");//opens Data.txt for parsing
-			error=fopen_s(&Output_w,"Output.txt","w+");//opens Output.txt for filling
 			TempVictim=Victim_Head.head;
 			createVictim(VICTIM_CACHE_SIZE,TempVictim);
 			Temp1=L1_Head.head;
-			createCache(Adder_1,Temp1);
+			createCache(Adder_1,Temp1,1);
 			Temp2=L2_Head.head;
-			createCache(L2_CACHE_SIZE,Temp2);
+			createCache(Adder_2,Temp2,2);
+			
+			fprintf(Output_w ,"\n\n\n\nL1_CACHE_SIZE:%d",Adder_1);
+			if(L2_CACHE)
+				fprintf(Output_w," , L2_CACHE_SIZE:%d ",Adder_2);
+			fprintf(Output_w,"\t(T:%d,IN:%d,BO:%d)",Tag_bits ,Index_bits,BlockOffset_bits);
+			if(L2_CACHE)
+				fprintf(Output_w,"\t(T:%d,IN:%d,BO:%d)",Tag_bits_L2,Index_bits_L2,BlockOffset_bits_L2);
+			fprintf(Output_w,"\n================================\n\n");
 			//printQueue(L1_Head);
 			//printQueue(L2_Head);
 			for(i=0;i<LinesInDataBase;i++){//loops until the end of Data.txt
@@ -220,40 +261,54 @@ int main(int argc, char ** argv){
 					free_Cache(L1_Head.head);
 					L1_Head.head=&L1_Tail;
 					L1_Tail.tail=&L1_Head;
+					L2_Head.head=&L2_Tail;
+					L2_Tail.tail=&L2_Head;
 					flushNo++;
-					createCache(Adder_1,Temp1);
+					createCache(Adder_1,Temp1,1);
+					createCache(Adder_2,Temp2,2);
 				}
 			}
+			printQueue(L1_Head);
+			printQueue(L2_Head);
 			//printQueue();
 			//printf("\n\nOUR CACHE AFTER INPUT:\n");
 			//printf("=====================");
 			//printQueue(L1_Head);
 
-			printf("\n\n\n\nL1_CACHE_SIZE:%d L2_CACHE_SIZE:%d",Adder_1,Adder_2);
-			printf("\t(T:%d,IN:%d,BO:%d)\n",Tag_bits,Index_bits,BlockOffset_bits);
-			printf("================================");
-			printf("\nreadmisses:%d readhits:%d\nwritemisses:%d writehits:%d\nmodifymisses:%d modifyhits:%d",ReadMiss,ReadHit,WriteMiss,WriteHit,ModifyMiss,ModifyHit);
+			printf("\n\n\n\nL1_CACHE_SIZE:%d",Adder_1);
+			if(L2_CACHE)
+				printf(" , L2_CACHE_SIZE:%d ",Adder_2);
+			printf("\t(T:%d,IN:%d,BO:%d)",Tag_bits ,Index_bits,BlockOffset_bits);
+			if(L2_CACHE)
+				printf("\t(T:%d,IN:%d,BO:%d)",Tag_bits_L2,Index_bits_L2,BlockOffset_bits_L2);
+			printf("\n====================================");
+			printf("\nReadMisses:%d ReadHits:%d\nWriteMisses:%d WriteHits:%d\nModifyMisses:%d Modify_Hits:%d\nWrite_Victim_Hits:%d Read_Victim_Hit:%d\nWrite_L2_Hits:%d Read_L2_Hit:%d \n",ReadMiss,ReadHit,WriteMiss,WriteHit,ModifyMiss,ModifyHit,WriteHitofVictim,ReadHittoVictim,WriteHittoL2,ReadHittoL2);
 			printf("\n\nTotal Misses:%d  Total Hits:%d",Misses,Hits);
 			performance=(float)Hits/((float)Misses+(float)Hits)*100;
 			printf("\nPerformance:%f %%\nFlushes:%d",performance,flushNo-1);
 			printf("\nTotal Cycles:%d",Cycles);
 			printf("\nMISSES:\tCompulsory:%d\n\tCapacity:%d\n\tConflict:%d",compulsory,capacity,conflict);
+			
 
-			fprintf(Results_w,"\n\n\n\nL1_CACHE_SIZE:%d L2_CACHE_SIZE:%d",Adder_1,Adder_2);
-			fprintf(Results_w,"\t(T:%d,IN:%d,BO:%d)\n",Tag_bits,Index_bits,BlockOffset_bits);
-			fprintf(Results_w,"============================");
+			fprintf(Results_w,"\n\n\n\nL1_CACHE_SIZE:%d",Adder_1);
+			if(L2_CACHE)
+				fprintf(Results_w," , L2_CACHE_SIZE:%d ",Adder_2);
+			fprintf(Results_w,"\t(T:%d,IN:%d,BO:%d)",Tag_bits ,Index_bits,BlockOffset_bits);
+			if(L2_CACHE)
+				fprintf(Results_w,"\t(T:%d,IN:%d,BO:%d)",Tag_bits_L2,Index_bits_L2,BlockOffset_bits_L2);
+			fprintf(Results_w,"\n================================");
 			fprintf(Results_w,"\nTAG:%d Index:%d BlockOffSet:%d\n",Tag_bits,Index_bits,BlockOffset_bits);
-			fprintf(Results_w,"\nreadmisses:%d readhits:%d\nwritemisses:%d writehits:%d\nmodifymisses:%d modifyhits:%d",ReadMiss,ReadHit,WriteMiss,WriteHit,ModifyMiss,ModifyHit);
+			fprintf(Results_w,"\nReadMisses:%d ReadHits:%d\nWriteMisses:%d WriteHits:%d\nModifyMisses:%d Modify_Hits:%d\nWrite_Victim_Hits:%d Read_Victim_Hit:%d\nWrite_L2_Hits:%d Read_L2_Hit:%d ",ReadMiss,ReadHit,WriteMiss,WriteHit,ModifyMiss,ModifyHit,WriteHitofVictim,ReadHittoVictim,WriteHittoL2,ReadHittoL2);
 			fprintf(Results_w,"\n\nTotal Misses:%d  Total Hits:%d",Misses,Hits);
 			fprintf(Results_w,"\nPerformance:%f %%\nFlushes:%d",performance,flushNo-1);
 			fprintf(Results_w,"\nTotal Cycles:%d",Cycles);
 			fprintf(Results_w,"\nMISSES:\tCompulsory:%d\n\tCapacity:%d\n\tConflict:%d",compulsory,capacity,conflict);
-			printQueue(L1_Head);
-			printQueue(Victim_Head);
+			//printQueue(L2_Head);
+			//printQueue(Victim_Head);
 			free_Cache(L1_Head.head);
-			
-			Adder_2+=L2_ADDER;
-			fclose(Output_w);
+			free_Cache(L2_Head.head);
+			free_Cache(Victim_Head.head);
+			Adder_1+=L1_ADDER;
 
 			L1_Head.head=&L1_Tail;
 			L1_Tail.tail=&L1_Head;
@@ -266,13 +321,16 @@ int main(int argc, char ** argv){
 
 			initializer();
 			flushNo=1;
+			
 			fclose(DataBase_r);
 			fclose(DataBase_w);
 		}//end of while(Adder_2<=L2_CACHE_SIZE)
-		Adder_1+=L1_ADDER;
-		Adder_2=L2_ADDER;
+		Adder_2+=L2_ADDER;
+		Adder_1=L1_START_SIZE;
+		if(!L2_CACHE)break;
 	}//end of while(Adder_1<=L1_CACHE_SIZE)
 	
+	fclose(Output_w);
 
 	fclose(Parameter_r);
 	fclose(Results_w);  
@@ -352,6 +410,10 @@ void fillOutput(FILE *Output_w){
 	int TAG[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
 	int INDEX[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
 	int BLOCKOFFSET[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
+	
+	int TAG_L2[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
+	int INDEX_L2[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
+	int BLOCKOFFSET_L2[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
 
 	for(num=0;num<=0;num++){	//makes one loop in order to let me use continue and break		
 			getLine(DataBase_r);	//gets the num'th line
@@ -387,33 +449,63 @@ void fillOutput(FILE *Output_w){
 
 
 			//***TAG***//
-			fprintf(Output_w,"  TAG: ");//prints the Tag number
+			fprintf(Output_w," \t TAG: ");//prints the Tag number
 			for(num1=0;num1<Tag_bits;num1++){
 				fprintf(Output_w,"%d",BinaryNumber[num1]);
 				TAG[num1]=BinaryNumber[num1];
 			}
 			Tag_cache=BintoInt(TAG);
+			fprintf(Output_w,"(%d)",Tag_cache);
+
+			//***TAG_L2***//
+			for(num1=0;num1<Tag_bits_L2;num1++){
+				//fprintf(Output_w,"%d",BinaryNumber_L2[num1]);
+				TAG_L2[num1]=BinaryNumber_L2[num1];
+			}
+			Tag_cache_L2=BintoInt(TAG_L2);
+			//fprintf(Output_w,"(%d)",Tag_cache_L2);
 
 
 			//***INDEX***//
 			if(Index_bits>0){
-				fprintf(Output_w,"\tINDEX: ");//prints the Index number
-			}
+				fprintf(Output_w,"\t\tINDEX: ");//prints the Index number
+
 			for(num1=0;num1<Index_bits;num1++){
 				fprintf(Output_w,"%d",BinaryNumber[num1+Tag_bits]);
 				INDEX[num1]=BinaryNumber[num1+Tag_bits];
 			}
 			Index_cache=BintoInt(INDEX);
+			fprintf(Output_w,"(%d)",Index_cache);
 
+			//***INDEX_L2***//
+			for(num1=0;num1<Index_bits_L2;num1++){
+				//fprintf(Output_w,"%d",BinaryNumber_L2[num1+Tag_bits_L2]);
+				INDEX_L2[num1]=BinaryNumber_L2[num1+Tag_bits_L2];
+			}
+			Index_cache_L2=BintoInt(INDEX_L2);
+			//fprintf(Output_w,"(%d)",Index_cache_L2);
+			}
 
 			//***BLOCK OFFSET***//
-			if(BlockOffset_bits>0)
-				fprintf(Output_w,"  BO: ");//prints the Block Offset number
+			if(BlockOffset_bits>0){
+				fprintf(Output_w,"\t BO: ");//prints the Block Offset number
 			for(num1=0;num1<BlockOffset_bits;num1++){
 				fprintf(Output_w,"%d",BinaryNumber[num1+Tag_bits+Index_bits]);
 				BLOCKOFFSET[num1]=BinaryNumber[num1+Tag_bits+Index_bits];
 			}
 			BlockOffset_cache=BintoInt(BLOCKOFFSET);
+			fprintf(Output_w,"(%d)",BlockOffset_cache);
+			//***BLOCK OFFSET_L2***//
+			for(num1=0;num1<BlockOffset_bits_L2;num1++){
+				//fprintf(Output_w,"%d",BinaryNumber[num1+Tag_bits_L2+Index_bits_L2]);
+				BLOCKOFFSET_L2[num1]=BinaryNumber[num1+Tag_bits_L2+Index_bits_L2];
+			}
+			BlockOffset_cache_L2=BintoInt(BLOCKOFFSET_L2);	
+			//fprintf(Output_w,"(%d)",BlockOffset_cache_L2);
+			}
+			//printf("%d:%d:%d:%d:%d:%d\n",Tag_cache,Index_cache,BlockOffset_cache,TAG,INDEX,BLOCKOFFSET);
+
+			//printf("%d:%d:%d:%d:%d:%d\n",Tag_cache,Index_cache,BlockOffset_cache,TAG,INDEX,BLOCKOFFSET);
 
 
 
@@ -425,13 +517,18 @@ void decToInt(int decimalNumber){
 	int k=0;
     for(i=Ram_bits-1;i>=0;i--){//loops as many times as the number of ram bits
 		j=decimalNumber>>i;		//shift the decimal Number in order to get each bit of it
-		if (j & 1)
+		if (j & 1){
 			BinaryNumber[k]=1;//puts each bit into the global array BinaryNumber
-		else
+			BinaryNumber_L2[k]=1;//puts each bit into the global array BinaryNumber
+		}
+		else{
 		    BinaryNumber[k]=0;
+			BinaryNumber_L2[k]=0;//puts each bit into the global array BinaryNumber
+		}
 		k++;
     }
-	 BinaryNumber[k]='\0';//shows the end of that global array
+	 BinaryNumber[k]='\0';//shows the end of that global array	 
+	 BinaryNumber_L2[k]='\0';//shows the end of that global array	
 }//end of decToInt(int decimalNumber)
 //** Gets a line from a FILE and puts this line into char FilesLine  **//
 int getLine(FILE *DataBase){
@@ -551,6 +648,32 @@ void findTagIndexBlockOffset(int CACHE_SIZE){
 		exit(1);
 	}
 }
+void findTagIndexBlockOffset_L2(int CACHE_SIZE){
+	Ram_bits=log_2(RAM_SIZE/WORD_SIZE);		//gets the number of ram bits into the global variable Ram_bits
+	Cache_bits_L2=ceil(log_2((float)CACHE_SIZE/(float)WORD_SIZE)); //gets the number of Cache bits into the global variable Cache_bits
+	MAX_NUMBER=pow(2,Ram_bits)-1;			//gets the maximum into the global variable MAX_NUMBER
+	LinesInDataBase=(MAX_NUMBER+1)*DATA_FILL_NUMBER;//puts the total lines of Data.txt into the global variable LinesInDataBase
+	
+	if(DIRECT_MAPPED==1&&!SET_ASSOCIATIVE&&!FULL_ASSOCIATIVE){//Its Direct Mapped so it find the considering results TAG INDEX BLOCK OFFSET
+		BlockOffset_bits_L2=log_2(WORDS_PER_BLOCK); 
+		Index_bits_L2=Cache_bits_L2-BlockOffset_bits_L2;
+		Tag_bits_L2=Ram_bits-Index_bits_L2-BlockOffset_bits_L2;
+	}
+	else if(!DIRECT_MAPPED&&SET_ASSOCIATIVE==1&&!FULL_ASSOCIATIVE){//Its Set Associative so it find the considering results TAG INDEX BLOCK OFFSET
+		BlockOffset_bits_L2=log_2(WORDS_PER_BLOCK);
+		Index_bits_L2=log_2(CACHE_SIZE/WORD_SIZE/SET_ASSOCIATIVE_WAYS)-BlockOffset_bits_L2;
+		Tag_bits_L2=Ram_bits-Index_bits_L2-BlockOffset_bits_L2;
+	}
+	else if(!DIRECT_MAPPED&&!SET_ASSOCIATIVE&&FULL_ASSOCIATIVE==1){//Its Full Associative so it find the considering results TAG INDEX BLOCK OFFSET
+		BlockOffset_bits_L2=log_2(WORDS_PER_BLOCK);
+		Tag_bits_L2=Ram_bits-BlockOffset_bits_L2;
+	}
+	else{	//If the Parameters are not proper shows the Error
+		printf("Error:DIRECT_MAPPED SET_ASSOCIATIVE FULL_ASSOCIATIVE only one must be true");
+		_getch();
+		exit(1);
+	}
+}
 //** find the errors of Parameters
 void findErrors(){
 	//Parameters are passed in local variables
@@ -595,7 +718,7 @@ void findErrors(){
 				iserror=1;
 	}
 	if(!isLog_2(L2_ADDER)){//cannot have cache size which is not a power of 2
-				printf("Error:L2_CACHE_SIZE should be a power of 2\n");
+				printf("Error:L2_ADDER_SIZE should be a power of 2\n");
 				iserror=1;
 	}
 	if(!isLog_2(VICTIM_CACHE_SIZE)&&(VICTIM_CACHE==true)){//cannot have cache size which is not a power of 2
@@ -603,15 +726,23 @@ void findErrors(){
 				iserror=1;
 	}
 	if(!isLog_2(L1_ADDER)){//cannot have cache size which is not a power of 2
-				printf("Error:L1_CACHE_SIZE should be a power of 2\n");
+				printf("Error:L1_ADDER_SIZE should be a power of 2\n");
 				iserror=1;
 	}
-	if(L1_ADDER>cachesize){
-				printf("Error:L1_CACHE_SIZE should be BIGGER than L1_ADDER\n");
+	if(!isLog_2( L1_START_SIZE)){//cannot have cache size which is not a power of 2
+				printf("Error:L1_STARTING_SIZE should be a power of 2\n");
 				iserror=1;
 	}
-	if(L2_ADDER>cachesize2){
-				printf("Error:L2_CACHE_SIZE should be BIGGER than L2_ADDER\n");
+	if(!isLog_2( L2_START_SIZE)){//cannot have cache size which is not a power of 2
+				printf("Error:L2_STARTING_SIZE should be a power of 2\n");
+				iserror=1;
+	}
+	if(L1_START_SIZE>cachesize){
+				printf("Error:L1_CACHE_SIZE should be BIGGER than L1_START_SIZE\n");
+				iserror=1;
+	}
+	if(L2_START_SIZE>cachesize2){
+				printf("Error:L2_CACHE_SIZE should be BIGGER than L2_START_SIZE\n");
 				iserror=1;
 	}
 	if(cachesize2<cachesize){
@@ -638,11 +769,11 @@ void findErrors(){
 				printf("Error:CACHE_SIZE should be bigger than WORDS_PER_BLOCK*WORD_SIZE\n");
 				iserror=1;
 	}
-	if(SET_ASSOCIATIVE&&L1_ADDER<(WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE)){//data should fit into cache size
+	if(SET_ASSOCIATIVE&&L1_START_SIZE<(WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE)){//data should fit into cache size
 				printf("Error:L1_CACHE_SIZE should be bigger than WORDS_PER_BLOCK*SET_ASSOCIATIVE_WAYS*WORD_SIZE\n");
 				iserror=1;;
 	}
-	else if(L1_ADDER<(WORDS_PER_BLOCK*WORD_SIZE)){
+	else if(L1_START_SIZE<(WORDS_PER_BLOCK*WORD_SIZE)){
 				printf("Error:L1_CACHE_SIZE should be bigger than WORDS_PER_BLOCK*WORD_SIZE\n");
 				iserror=1;
 	}
@@ -699,6 +830,7 @@ void getParameters(FILE *Parameter){
 	char Param_str[25]={NULL};
 	char Param_num[50]={NULL};
 	char Param_num2[50]={NULL};
+	char Param_num3[50]={NULL};
 	char Param_Line[100]={NULL};
 	int LastLine=0;
 	getLine(Parameter);
@@ -710,7 +842,9 @@ void getParameters(FILE *Parameter){
 		equalStrings(Param_num,WordInLine);
 		parseWord(Param_Line,2);
 		equalStrings(Param_num2,WordInLine);
-		guessParameter(Param_str,Param_num,Param_num2);	
+		parseWord(Param_Line,3);
+		equalStrings(Param_num3,WordInLine);
+		guessParameter(Param_str,Param_num,Param_num2,Param_num3);	
 		printf("\n");
 		
 		if(LastLine==1)break;
@@ -720,16 +854,18 @@ void getParameters(FILE *Parameter){
 
 }
 //** Helps getParameter to get the right parameter **//
-void guessParameter(char *String,char *Number,char *Number2){
+void guessParameter(char *String,char *Number,char *Number2,char *Number3){
 	if(isStringEqual(String,"RAM_SIZE"))
 		RAM_SIZE=atoi(Number);
 	if(isStringEqual(String,"L1_CACHE_SIZE")){
-		L1_CACHE_SIZE=atoi(Number);
-		L1_ADDER=atoi(Number2);
+		L1_CACHE_SIZE=atoi(Number2);
+		L1_ADDER=atoi(Number3);
+		L1_START_SIZE=atoi(Number);
 	}
 	if(isStringEqual(String,"L2_CACHE_SIZE")){
-		L2_CACHE_SIZE=atoi(Number);
-		L2_ADDER=atoi(Number2);
+		L2_CACHE_SIZE=atoi(Number2);
+		L2_ADDER=atoi(Number3);
+		L2_START_SIZE=atoi(Number);
 	}
 
 	if(isStringEqual(String,"VICTIM_CACHE_SIZE")){
@@ -798,18 +934,28 @@ void guessParameter(char *String,char *Number,char *Number2){
 		WRITE_ALLOCATE=atoi(Number);
 	if(isStringEqual(String,"POLICY"))
 		equalStrings(POLICY,Number);
+
 	if(isStringEqual(String,"READ_FROM_CACHE"))
 		READ_FROM_CACHE=atoi(Number);
 	if(isStringEqual(String,"READ_FROM_RAM"))
 		READ_FROM_RAM=atoi(Number);
+	if(isStringEqual(String,"READ_FROM_L2_CACHE"))
+		READ_FROM_L2_CACHE=atoi(Number);
+	if(isStringEqual(String,"READ_FROM_VICTIM"))
+		READ_FROM_VICTIM=atoi(Number);
+
 	if(isStringEqual(String,"WRITE_TO_RAM"))
 		WRITE_TO_RAM=atoi(Number);
 	if(isStringEqual(String,"WRITE_TO_CACHE"))
 		WRITE_TO_CACHE=atoi(Number);
+	if(isStringEqual(String,"WRITE_TO_L2_CACHE"))
+		WRITE_TO_L2_CACHE=atoi(Number);
+	if(isStringEqual(String,"WRITE_TO_VICTIM"))
+		WRITE_TO_VICTIM=atoi(Number);
 
 	printf("%s ",String);
 	if(String[0]!=NULL){
-		if(!isStringEqual(String,"POLICY"))
+		if(!isStringEqual(String,"POLICY")&&!isStringEqual(String,"VICTIM_CACHE")&&!isStringEqual(String,"CACHE_MODE")&&!isStringEqual(String,"L2_CACHE"))
 			printf("%d",atoi(Number));
 		else
 			printf("%s",Number);
@@ -847,6 +993,7 @@ int BintoInt(int *Bits){
 		}
 		else
 			multiplier++;
+		//printf("%d\n",Bits[num0]);
 		num0++;
 	}
 	for(num1=0;num1<num0;num1++){
@@ -855,6 +1002,7 @@ int BintoInt(int *Bits){
 				Int=0;
 			Int=Int+Bits[num1]*pow(2,multiplier);		
 	}
+	
 	return Int;
 }
 //** prints a queue from head to tail **//
@@ -882,9 +1030,9 @@ void printQueue(struct Cache Head){
 
 
 		if(Temp->Index==-1)
-			printf("%3d:%d",Temp->Tag,Temp->BlockOffSet);
+			printf("%3d:%d:%d",Temp->Tag,Temp->BlockOffSet,Temp->Age);
 		else
-			printf("%3d:%d:%d",Temp->Tag,Temp->BlockOffSet,Temp->Index);
+			printf("%3d:%d:%d",Temp->Tag,Temp->Index,Temp->Age);
 
 			printf(" ");
 		Temp=Temp->head;
@@ -894,7 +1042,7 @@ void printQueue(struct Cache Head){
 
 }
 //** Creates the Cache depenting on the parameters **//
-void createCache(int CACHE_SIZE,struct Cache *Tail){
+void createCache(int CACHE_SIZE,struct Cache *Tail,int l1_l2){
 	struct Cache *newCache;
 	int i=0;
 	int tag;
@@ -903,17 +1051,26 @@ void createCache(int CACHE_SIZE,struct Cache *Tail){
 	int index=0;
 	int wayno=0;
 	int waycount=0;
-	int CACHEBITS=log_2(CACHE_SIZE/WORD_SIZE);
-	int indexpower=pow(2,Index_bits+BlockOffset_bits);
-	int bopower=pow(2,BlockOffset_bits);
+	int CACHEBITS=0;
+	int indexpower=0;
+	int bopower=0;
 	int size=CACHE_SIZE/WORD_SIZE;
+	int index_temp;
+	if(l1_l2==1)
+		index_temp=Index_bits;
+	if(l1_l2==2)
+		index_temp=Index_bits_L2;
+	//printf("INDEX TEMP %d\n\n\n\n\n",index_temp);
+	CACHEBITS=log_2(CACHE_SIZE/WORD_SIZE);
+	indexpower=pow(2,index_temp+BlockOffset_bits);
+	bopower=pow(2,BlockOffset_bits);
 	if(SET_ASSOCIATIVE)
 		AddressesPerWay=CACHE_SIZE/SET_ASSOCIATIVE_WAYS/WORDS_PER_BLOCK/WORD_SIZE;
 	for(i=0;i<size;i++){
 		/*finds tag*/
-		tag=i>>(Index_bits+BlockOffset_bits);
+		tag=i>>(index_temp+BlockOffset_bits);
 		/*finds Index*/
-		if(Index_bits==0)
+		if(index_temp==0)
 			index=-1;
 		else
 			index=(i%indexpower)>>BlockOffset_bits;
@@ -922,7 +1079,8 @@ void createCache(int CACHE_SIZE,struct Cache *Tail){
 			bo=-1;
 		else
 			bo=i%bopower;
-
+		
+		//printf("INDEX  %d bit:%d i:%d\n",index,BlockOffset_bits,i);
 		newCache=(struct Cache*)malloc((sizeof(struct Cache)));
 		newCache->Valid=false;
 		newCache->Tag=tag;
@@ -945,20 +1103,26 @@ void createCache(int CACHE_SIZE,struct Cache *Tail){
 
 		}
 	}
+	printf("\n");
 }
 //** enqueues a new address into Cache **//
 void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 	struct Cache *newCache;
 	struct Cache *Temp;
+	struct Cache *Temp_L2;
 	struct Cache *PLACE;
 	int place=1;
+	int place_L2=1;
 	int notfull=0;
+	int FoundinVictim=0;
 	int i=0;
 	int dirty=1;
 	int actionCycles=0;
 	int read_write_hit_miss=0;
 	Temp= (struct Cache*)malloc((sizeof(struct Cache)));
 	Temp=Head.head;
+	Temp_L2= (struct Cache*)malloc((sizeof(struct Cache)));
+	Temp_L2=L2_Head.head;
 	PLACE= (struct Cache*)malloc((sizeof(struct Cache)));
 	PLACE=Head.head;
 	newCache=(struct Cache*)malloc((sizeof(struct Cache)));
@@ -967,13 +1131,19 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 	newCache->Index=Index_cache;
 	newCache->BlockOffSet=BlockOffset_cache;
 	newCache->Age=LinesInDataBase-size;
-	place=enqueuePlace(newCache->Tag,newCache->Index,newCache->BlockOffSet,newCache->Age,newCache->Touched,L1_CACHE_SIZE,Head);
+	//printQueue(Head);
+	//printf("tag:%d,index:%d,bo:%d->tag:%d,ind:%d,bo:%d\n",Tag_cache,Index_cache);
+	place=enqueuePlace(newCache->Tag,newCache->Index,newCache->BlockOffSet,newCache->Age,newCache->Touched,L1_CACHE_SIZE,Head,1);
 	for(i=0;i<place;i++){
 		Temp=Temp->head;
 	}
+	
+	//printf("place:%d",place);
+	//printf("%d\n",Temp->Age);
+	//printf("tag:%d,index:%d,bo:%d->age:%d,touch:%d\n",Temp->Tag,Temp->Index,Temp->BlockOffSet,Temp->Age,Temp->Touched);
 	//printf("%d,%d,%d->%d,%d,%d\n",newCache->Tag,newCache->Index,newCache->BlockOffSet,Temp->Tag,Temp->Index,Temp->BlockOffSet);
 	if(Action=='R'){
-		if(Temp->Tag==newCache->Tag&&Temp->Valid==true){
+		if(Temp->Tag==newCache->Tag&&Temp->Valid==true&&(FULL_ASSOCIATIVE||Temp->Index==newCache->Index)){
 			ReadHit++;
 			Hits++;
 			Temp->Touched=newCache->Age;
@@ -981,40 +1151,94 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 			fprintf(Output_w,"\tHIT\t\t\t\t\t");
 		}
 		else{
-			ReadMiss++;
-			Misses++;
-			read_write_hit_miss=2;
-			fprintf(Output_w,"\tMISS:");
-			if(Temp->Age==-1){
-				fprintf(Output_w,"\tCOMPULSORY\t\t\t");
-			}else{
-				if(DIRECT_MAPPED){
-					fprintf(Output_w,"\tCAPACITY\t\t\t");
-				}
-				if(SET_ASSOCIATIVE||FULL_ASSOCIATIVE){
-					if(!isStringEqual(POLICY,"RANDOM")){
-						fprintf(Output_w,"\tCONFLICT\t\t\t");
-					}
-					else{
-						PLACE=Head.head;
-						while(PLACE->head!=NULL){
-							if(PLACE->Age==-1)
-								notfull=1;
-							PLACE=PLACE->head;
-						}
-						if(notfull){
-							fprintf(Output_w,"\tCONFLICT\t\t\t");
-						}
-						else{
-							fprintf(Output_w,"\tCAPACITY\t\t\t");
-						}
-					}
+			if(L2_CACHE==true){
+				//printf("\ntag:%d index:%d bo:%d\n",Tag_cache_L2,Index_cache_L2,BlockOffset_cache_L2);
+				place_L2=enqueuePlace(Tag_cache_L2,Index_cache_L2,BlockOffset_cache_L2,newCache->Age,newCache->Touched,L2_CACHE_SIZE,L2_Head,2);
+				//printf("\nplace:%d",place_L2);
+				for(i=0;i<place_L2;i++){
+					Temp_L2=Temp_L2->head;
 				}
 			}
-		}
+			if(VICTIM_CACHE==true&&found_in_L2!=true){
+				FoundinVictim=enqueueVictim(newCache->Tag,newCache->Index,newCache->BlockOffSet,newCache->Age,newCache->Touched);
+			}
+			if(FoundinVictim!=1&&found_in_L2!=true){
+					ReadMiss++;
+					Misses++;
+					read_write_hit_miss=2;
+					fprintf(Output_w,"\tMISS:");
+					if(Temp->Age==-1){
+						fprintf(Output_w,"\tCOMPULSORY\t\t\t");
+						compulsory++;
+					}else{
+						if(DIRECT_MAPPED){
+							fprintf(Output_w,"\tCAPACITY\t\t\t");
+						}
+						if(SET_ASSOCIATIVE||FULL_ASSOCIATIVE){
+							if(!isStringEqual(POLICY,"RANDOM")){
+								fprintf(Output_w,"\tCONFLICT\t\t\t");
+							}
+							else{
+								PLACE=Head.head;
+								while(PLACE->head!=NULL){
+									if(PLACE->Age==-1)
+										notfull=1;
+									PLACE=PLACE->head;
+								}
+								if(notfull){
+									fprintf(Output_w,"\tCONFLICT\t\t\t");
+								}
+								else{
+									fprintf(Output_w,"\tCAPACITY\t\t\t");
+								}
+							}
+						}
+					}
+					//****INCLUSIVE****/
+					if(CACHE_MODE==true&&L2_CACHE==true){
+						//Temp_L2->Index=Index_cache_L2;
+						Temp_L2->BlockOffSet=BlockOffset_cache_L2;
+						Temp_L2->Tag=Tag_cache_L2;
+						Temp_L2->Valid=true;
+						Temp_L2->Age=newCache->Age;
+						Temp_L2->Touched=newCache->Age;
+					}
+					//****EXCLUSIVE****/
+					if(CACHE_MODE==false&&L2_CACHE==true&&Temp->Age!=-1){
+						findvaluesinL2(Temp->Tag,Temp->Index,Temp->BlockOffSet);
+						//Temp_L2->Index=Index_cache_L2;
+						Temp_L2->BlockOffSet=BlockOffset_cache_L2;
+						Temp_L2->Tag=Tag_cache_L2;
+						Temp_L2->Valid=true;
+						Temp_L2->Age=newCache->Age;
+						Temp_L2->Touched=newCache->Age;
+					}
+					//Temp->Index=newCache->Index;
+					Temp->BlockOffSet=newCache->BlockOffSet;
+					Temp->Tag=newCache->Tag;
+					Temp->Valid=true;
+					Temp->Age=newCache->Age;
+					Temp->Touched=newCache->Age;
+			}else{
+					if(FoundinVictim==1){
+							ReadHittoVictim++;
+							Hits++;
+							Temp->Touched=newCache->Age;
+							read_write_hit_miss=6;
+							fprintf(Output_w,"\tVICTIM_HIT\t\t\t\t\t");
+					}
+					if(found_in_L2==true){
+							ReadHittoL2++;
+							Hits++;
+							Temp_L2->Touched=newCache->Age;
+							read_write_hit_miss=8;
+							fprintf(Output_w,"\tL2_HIT\t\t\t\t\t");
+					}
+			}
+		}//endof else if(action==R)
 	}
 	if(Action=='W'){
-		if(Temp->Tag==newCache->Tag&&Temp->Valid==true){
+		if(Temp->Tag==newCache->Tag&&Temp->Valid==true&&(FULL_ASSOCIATIVE||Temp->Index==newCache->Index)){
 			WriteHit++;
 			Hits++;
 			read_write_hit_miss=3;
@@ -1026,59 +1250,114 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 			}
 		}
 		else{
-			enqueueVictim(Temp->Tag,Temp->Index,Temp->BlockOffSet,Temp->Age,Temp->Touched);
-			fprintf(Output_w,"\tMISS:");
-			if(Temp->Age==-1){
-				fprintf(Output_w,"\tCOMPULSORY\tREPLACE:(UNKOWN)");
-				compulsory++;
-			}
-			else{
-				if(DIRECT_MAPPED){
-					fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
-					printBinaryNumber(Temp->Tag,Temp->Index,Temp->BlockOffSet);
-					fprintf(Output_w,")\t");
-					conflict++;
+			if(L2_CACHE==true){
+				place_L2=enqueuePlace(Tag_cache_L2,Index_cache_L2,BlockOffset_cache_L2,newCache->Age,newCache->Touched,L2_CACHE_SIZE,L2_Head,2);
+				//printf("place1:%d place2:%d\n",place,place_L2);
+				for(i=0;i<place_L2;i++){
+					Temp_L2=Temp_L2->head;
 				}
-				if(SET_ASSOCIATIVE||FULL_ASSOCIATIVE){
-					if(!isStringEqual(POLICY,"RANDOM")){
-						fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
-						printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+			}
+			if(VICTIM_CACHE==true&&found_in_L2!=true){
+				FoundinVictim=enqueueVictim(newCache->Tag,newCache->Index,newCache->BlockOffSet,newCache->Age,newCache->Touched);
+			}
+			if(FoundinVictim!=1&&found_in_L2!=true){
+				fprintf(Output_w,"\tMISS:");
+				if(Temp->Age==-1){
+					fprintf(Output_w,"\tCOMPULSORY\tREPLACE:(UNKOWN)");
+					compulsory++;
+				}
+				else{
+					if(DIRECT_MAPPED){
+						fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
+						printBinaryNumber(Temp->Tag,Temp->Index,Temp->BlockOffSet);
 						fprintf(Output_w,")\t");
-						capacity++;
+						conflict++;
 					}
-					else{
-						PLACE=Head.head;
-						while(PLACE->head!=NULL){
-							if(PLACE->Age==-1)
-								notfull=1;
-							PLACE=PLACE->head;
-						}
-						if(notfull){
-							fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
-							printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
-							fprintf(Output_w,")\t");
-							conflict++;
-						}
-						else{
+					if(SET_ASSOCIATIVE||FULL_ASSOCIATIVE){
+						if(!isStringEqual(POLICY,"RANDOM")){
 							fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
-							printBinaryNumber(Temp->Tag,Temp->Index,Temp->BlockOffSet);
+							printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
 							fprintf(Output_w,")\t");
 							capacity++;
 						}
+						else{
+							PLACE=Head.head;
+							while(PLACE->head!=NULL){
+								if(PLACE->Age==-1)
+									notfull=1;
+								PLACE=PLACE->head;
+							}
+							if(notfull){
+								fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
+								printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+								fprintf(Output_w,")\t");
+								conflict++;
+							}
+							else{
+								fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
+								printBinaryNumber(Temp->Tag,Temp->Index,Temp->BlockOffSet);
+								fprintf(Output_w,")\t");
+								capacity++;
+							}
+						}
 					}
 				}
+				//printf("tag:%d,index:%d,bo:%d->tag:%d,ind:%d,bo:%d\n",newCache->Tag,newCache->Index,newCache->BlockOffSet,Temp->Tag,Temp->Index,Temp->BlockOffSet);
+				//****INCLUSIVE****/
+					if(CACHE_MODE==true&&L2_CACHE==true){
+						//Temp_L2->Index=Index_cache_L2;
+						Temp_L2->BlockOffSet=BlockOffset_cache_L2;
+						Temp_L2->Tag=Tag_cache_L2;
+						Temp_L2->Valid=true;
+						Temp_L2->Age=newCache->Age;
+						Temp_L2->Touched=newCache->Age;
+					}
+					
+					//****EXCLUSIVE****/
+					if(CACHE_MODE==false&&L2_CACHE==true&&Temp->Age!=-1){
+						findvaluesinL2(Temp->Tag,Temp->Index,Temp->BlockOffSet);
+						//Temp_L2->Index=Index_cache_L2;
+						Temp_L2->BlockOffSet=BlockOffset_cache_L2;
+						Temp_L2->Tag=Tag_cache_L2;
+						Temp_L2->Valid=true;
+						Temp_L2->Age=newCache->Age;
+						Temp_L2->Touched=newCache->Age;
+					}
+				//Temp->Index=newCache->Index;
+				Temp->BlockOffSet=newCache->BlockOffSet;
+				Temp->Tag=newCache->Tag;
+				Temp->Valid=true;
+				Temp->Age=newCache->Age;
+				Temp->Touched=newCache->Age;
+				read_write_hit_miss=4;
+				WriteMiss++;
+				Misses++;
+			}//end of foundinvictim
+			else{
+					if(FoundinVictim==1){
+							WriteHitofVictim++;
+							Hits++;
+							Temp->Touched=newCache->Age;
+							read_write_hit_miss=5;
+							fprintf(Output_w,"\tVICTIM_HIT\t\t\t\t\t");
+							if(WRITE_BACK){
+								Temp->Dirty=0;
+							}
+					}
+					if(found_in_L2==true){
+							WriteHittoL2++;
+							Hits++;
+							Temp_L2->Touched=newCache->Age;
+							read_write_hit_miss=9;
+							fprintf(Output_w,"\tL2_HIT\t\t\t\t\t");
+							Temp_L2->Age=newCache->Age;
+							Temp_L2->Touched=newCache->Age;
+					}
 			}
-			Temp->Tag=newCache->Tag;
-			Temp->Valid=true;
-			Temp->Age=newCache->Age;
-			Temp->Touched=newCache->Age;
-			read_write_hit_miss=4;
-			WriteMiss++;
-			Misses++;
 		}
 	}
 	if(Action=='M'){
-		if(Temp->Tag==newCache->Tag&&Temp->Valid==true){
+		if(Temp->Tag==newCache->Tag&&Temp->Valid==true&&(FULL_ASSOCIATIVE||Temp->Index==newCache->Index)){
 			ModifyHit++;
 			Hits++;
 			Temp->Touched=newCache->Age;
@@ -1086,12 +1365,24 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 			fprintf(Output_w,"\tHIT\t\t\t\t\t");
 		}
 		else{
+			if(L2_CACHE==true){
+				place_L2=enqueuePlace(Tag_cache_L2,Index_cache_L2,BlockOffset_cache_L2,newCache->Age,newCache->Touched,L2_CACHE_SIZE,L2_Head,2);	
+				//printf("place1:%d place2:%d\n",place,place_L2);
+				for(i=0;i<place_L2;i++){
+					Temp_L2=Temp_L2->head;
+				}
+			}
+			if(VICTIM_CACHE==true&&found_in_L2!=true){
+				FoundinVictim=enqueueVictim(newCache->Tag,newCache->Index,newCache->BlockOffSet,newCache->Age,newCache->Touched);
+			}
+			if(FoundinVictim!=1&&found_in_L2!=true){
 			ModifyMiss++;
 			Misses++;
 			read_write_hit_miss=2;
 			fprintf(Output_w,"\tMISS");
 			if(Temp->Age==-1){
 				fprintf(Output_w,"\tCOMPULSORY\t\t\t");
+				compulsory++;
 			}else{
 				if(DIRECT_MAPPED){
 					fprintf(Output_w,"\tCAPACITY\t\t\t");
@@ -1116,17 +1407,65 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 					}
 				}
 			}
+			//****INCLUSIVE****/
+			if(CACHE_MODE==true&&L2_CACHE==true){
+				//Temp_L2->Index=Index_cache_L2;
+				Temp_L2->BlockOffSet=BlockOffset_cache_L2;
+				Temp_L2->Tag=Tag_cache_L2;
+				Temp_L2->Valid=true;
+				Temp_L2->Age=newCache->Age;
+				Temp_L2->Touched=newCache->Age;
+			}
+					
+					//****EXCLUSIVE****/
+			if(CACHE_MODE==false&&L2_CACHE==true&&Temp->Age!=-1){
+				findvaluesinL2(Temp->Tag,Temp->Index,Temp->BlockOffSet);
+				//Temp_L2->Index=Index_cache_L2;
+				Temp_L2->BlockOffSet=BlockOffset_cache_L2;
+				Temp_L2->Tag=Tag_cache_L2;
+				Temp_L2->Valid=true;
+				Temp_L2->Age=newCache->Age;
+				Temp_L2->Touched=newCache->Age;
+			}
+			//Temp->Index=newCache->Index;
+			Temp->BlockOffSet=newCache->BlockOffSet;
+			Temp->Tag=newCache->Tag;
+			Temp->Valid=true;
+			Temp->Age=newCache->Age;
+			Temp->Touched=newCache->Age;
+		  }//end of if(FoundinVictim!=1)
+			else{
+				if(FoundinVictim==1){
+							ReadHittoVictim++;
+							Hits++;
+							Temp->Touched=newCache->Age;
+							read_write_hit_miss=6;
+							fprintf(Output_w,"\tVICTIM_HIT\t\t\t\t\t");
+					}
+					if(found_in_L2==true){
+							ReadHittoL2++;
+							Hits++;
+							Temp_L2->Touched=newCache->Age;
+							read_write_hit_miss=8;
+							fprintf(Output_w,"\tL2_HIT\t\t\t\t\t");
+					}
+					if(WRITE_BACK){
+						Temp->Dirty=0;
+					}
+			}
 		}
 	}
 	if(Action=='W'){
 		dirty=Temp->Dirty;
 	}
+	found_in_L2=false;
+	found_in_L1=false;
 	actionCycles=guessCycles(read_write_hit_miss,dirty);
-	fprintf(Output_w,"\tCYCLES:%d\n",actionCycles);
+	fprintf(Output_w,"\tCYCLES:%d AGE...%d \n",actionCycles,Temp->Age);
 	free((void*)newCache);
 }
 //** finds a place for new address  int the  into Cache **//
-int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struct Cache Head){
+int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struct Cache Head,int l1_l2){
 	struct Cache *Temp;
 	int writeplace=0;
 	int i=0,j=0;
@@ -1134,13 +1473,19 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 	int number=0;
 	int random=0;
 	int decisionplace=0;
+	int maxage=0;
+	int directed=0;
 	Temp= (struct Cache*)malloc((sizeof(struct Cache)));
 	Temp=Head.head;
-
+	//printf("found_in_L2:%d place :%d\n",found_in_L2,writeplace);
 	if(DIRECT_MAPPED){
-		while (Temp->head!=NULL)
+		while (Temp->head->head!=NULL)
 		{		
-			if(Temp->Index==index&&Temp->BlockOffSet==bo){
+			//printf("\ntag:%d index:%d bo:%d\n",Temp->Tag,Temp->Index,Temp->BlockOffSet);
+			if(Temp->Valid==true&&Temp->Tag==tag&&Temp->Index==index&&(WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)){
+				if(l1_l2==2)
+					found_in_L2=true;
+					directed=1;
 				break;
 			}
 			else{
@@ -1148,13 +1493,31 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 				writeplace++;
 			}
 		}
+		if(directed!=1){
+				writeplace=0;
+				Temp=Head.head;
+				while (Temp->head->head!=NULL)
+				{		
+					//printf("\ntag:%d index:%d bo:%d\n",Temp->Tag,Temp->Index,Temp->BlockOffSet);
+					if(Temp->Index==index&&(WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)){
+						break;
+					}
+					else{
+						Temp=Temp->head;
+						writeplace++;
+					}
+				}
+		}
 	}
-
+	
 	if(FULL_ASSOCIATIVE&&isStringEqual(POLICY,"FIFO")){	
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo){
+			if(Temp->Tag==tag&&Temp->Valid==true&&(WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)){
 				found=1;
+				if(l1_l2==2)
+					found_in_L2=true;
 				writeplace=j;
+				break;
 			}
 			j++;
 			Temp=Temp->head;
@@ -1162,7 +1525,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 		if(found!=1){
 			Temp=Head.head;
 			while(Temp->head!=NULL){
-				if(Temp->BlockOffSet==bo&&Temp->Age==-1){
+				if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&Temp->Age==-1){
 					writeplace=number;
 					found=2;
 					break;
@@ -1170,26 +1533,30 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 				Temp=Temp->head;
 				number++;
 			}
-			if(found!=2){
+		}
+		if(found!=2&&found!=1){
 				number=0;
 				Temp=Head.head;
 				while(Temp->head!=NULL){
-					if(Temp->BlockOffSet==bo&&age>=Temp->Age){
-						age=Temp->Age;
+					if((WORDS_PER_BLOCK==1||Temp->BlockOffSet)==bo&&maxage<=Temp->Age){
+						maxage=Temp->Age;
+						found=3;
 						writeplace=number;
 					}
 				Temp=Temp->head;
 				number++;
 				}
 			}
-		}
+		
 	}
 
 	if(FULL_ASSOCIATIVE&&isStringEqual(POLICY,"RANDOM")){	
 		found=0;
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo){
+			if(Temp->Tag==tag&&Temp->Valid==true&&(WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)){
 				found=1;
+				if(l1_l2==2)
+					found_in_L2=true;
 				writeplace=j;
 			}
 			j++;
@@ -1200,11 +1567,11 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 			Temp=Head.head;
 			random=random_number(CACHE_SIZE/WORDS_PER_BLOCK/WORD_SIZE);
 			while(Temp->head!=NULL){
-				if(Temp->BlockOffSet==bo&&random==0){
+				if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&random==0){
 					writeplace=number;
 					break;
 				}
-				if(Temp->BlockOffSet==bo){
+				if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)){
 					random--;
 				}
 				Temp=Temp->head;
@@ -1217,8 +1584,10 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 	if(FULL_ASSOCIATIVE&&isStringEqual(POLICY,"LRU")){	
 		found=0;
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo){
+			if(Temp->Tag==tag&&Temp->Valid==true&&(WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)){
 				found=1;
+				if(l1_l2==2)
+					found_in_L2=true;
 				writeplace=j;
 			}
 			j++;
@@ -1228,7 +1597,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 			Temp=Head.head;
 			number=0;
 			while(Temp->head!=NULL){
-				if(Temp->BlockOffSet==bo&&Temp->Age==-1){
+				if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&Temp->Age==-1){
 					writeplace=number;
 					found=2;
 					break;
@@ -1237,12 +1606,13 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 				number++;
 			}
 		}
-		if(found!=2){
+		if(found!=2&&found!=1){
 				number=0;
 				Temp=Head.head;
 				while(Temp->head!=NULL){
-					if(Temp->BlockOffSet==bo&&(age>=Temp->Age&&touch>=Temp->Age)){
+					if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&(age<=Temp->Age&&touch<=Temp->Age)){
 						age=Temp->Age;
+						found=3;
 						touch=Temp->Touched;
 						writeplace=number;
 					}
@@ -1254,8 +1624,10 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 
 	if(SET_ASSOCIATIVE&&isStringEqual(POLICY,"FIFO")){
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo&&Temp->Index==index){
+			if(Temp->Tag==tag&&Temp->Valid==true&&(WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&Temp->Index==index){
 				found=1;
+				if(l1_l2==2)
+					found_in_L2=true;
 				writeplace=j;
 			}
 			j++;
@@ -1264,7 +1636,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 		if(found!=1){
 			Temp=Head.head;
 			while(Temp->head!=NULL){
-				if(Temp->BlockOffSet==bo&&Temp->Index==index&&Temp->Age==-1){
+				if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&Temp->Index==index&&Temp->Age==-1){
 					writeplace=number;
 					found=2;
 					break;
@@ -1272,12 +1644,13 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 				Temp=Temp->head;
 				number++;
 			}
-			if(found!=2){
+			if(found!=2&&found!=1){
 				number=0;
 				Temp=Head.head;
 				while(Temp->head!=NULL){
-					if(Temp->BlockOffSet==bo&&age>=Temp->Age&&Temp->Index==index){
+					if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&age<=Temp->Age&&Temp->Index==index){
 						age=Temp->Age;
+						found=3;
 						writeplace=number;
 					}
 				Temp=Temp->head;
@@ -1290,8 +1663,10 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 	if(SET_ASSOCIATIVE&&isStringEqual(POLICY,"RANDOM")){	
 		found=0;
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo&&Temp->Index==index){
+			if(Temp->Tag==tag&&Temp->Valid==true&&(WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&Temp->Index==index){
 				found=1;
+				if(l1_l2==2)
+					found_in_L2=true;
 				writeplace=j;
 			}
 			j++;
@@ -1302,11 +1677,11 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 			Temp=Head.head;
 			random=random_number(CACHE_SIZE/WORDS_PER_BLOCK/WORD_SIZE);
 			while(Temp->head!=NULL){
-				if(Temp->BlockOffSet==bo&&random==0&&Temp->Index==index){
+				if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&random==0&&Temp->Index==index){
 					writeplace=number;
 					break;
 				}
-				if(Temp->BlockOffSet==bo){
+				if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)){
 					random--;
 				}
 				Temp=Temp->head;
@@ -1321,6 +1696,8 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 		while(Temp->head!=NULL){
 			if(Temp->Tag==tag&&Temp->Valid==1&&Temp->BlockOffSet==bo&&Temp->Index==index){
 				found=1;
+				if(l1_l2==2)
+					found_in_L2=true;
 				writeplace=j;
 			}
 			j++;
@@ -1330,7 +1707,7 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 			Temp=Head.head;
 			number=0;
 			while(Temp->head!=NULL){
-				if(Temp->BlockOffSet==bo&&Temp->Age==-1&&Temp->Index==index){
+				if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&Temp->Age==-1&&Temp->Index==index){
 					writeplace=number;
 					found=2;
 					break;
@@ -1339,25 +1716,30 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 				number++;
 			}
 		}
-		if(found!=2){
+		if(found!=2&&found!=1){
 				number=0;
 				Temp=Head.head;
 				while(Temp->head!=NULL){
-					if(Temp->BlockOffSet==bo&&(age>=Temp->Age&&touch>=Temp->Age&&Temp->Index==index)){
+					if((WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&(age<=Temp->Age&&touch>=Temp->Age&&Temp->Index==index)){
 						age=Temp->Age;
 						touch=Temp->Touched;
 						writeplace=number;
+						found=3;
 					}
 				Temp=Temp->head;
 				number++;
 				}
 			}
 	}
+	//printQueue(L2_Head);
+	
+	//printQueue(L1_Head);
+	//printf("2.found_in_L2:%d place:%d\n",found_in_L2,writeplace);
 	return writeplace;
 }
 //** Guesses how may penalty Cycles will we have for every instuction **//
 int guessCycles(int read_write_hit_miss,int dirty){
-	
+	int total=0;
 	/*READ OR MODIFY HIT*/
 	if(read_write_hit_miss==1){
 			return READ_FROM_CACHE;
@@ -1375,10 +1757,9 @@ int guessCycles(int read_write_hit_miss,int dirty){
 	/*WRITE HIT*/
 	if(read_write_hit_miss==3){
 		if(WRITE_THROUGH){
-				Cycles+=READ_FROM_CACHE;
 				Cycles+=WRITE_TO_CACHE;
 				Cycles+=WRITE_TO_RAM;
-				return READ_FROM_CACHE+WRITE_TO_CACHE+WRITE_TO_RAM;
+				return WRITE_TO_CACHE+WRITE_TO_RAM;
 		}
 		if(WRITE_BACK){//
 			if(dirty==0){
@@ -1408,6 +1789,51 @@ int guessCycles(int read_write_hit_miss,int dirty){
 			return WRITE_TO_RAM+READ_FROM_RAM+READ_FROM_CACHE;
 		}
 	}
+	/*WRITE HIT IN VICTIM*/
+	if(read_write_hit_miss==5){
+		if(WRITE_THROUGH){
+				Cycles+=READ_FROM_VICTIM;
+				return READ_FROM_VICTIM;
+		}
+		if(WRITE_BACK){//
+			if(dirty==0){
+				Cycles+=READ_FROM_VICTIM;
+				Cycles+=WRITE_TO_RAM;
+				return WRITE_TO_RAM+READ_FROM_VICTIM;
+			}
+			if(dirty==1){
+				Cycles+=READ_FROM_CACHE;
+				if(L2_CACHE==1)
+					Cycles+=READ_FROM_L2_CACHE;
+				Cycles+=READ_FROM_VICTIM;
+				return READ_FROM_VICTIM+READ_FROM_L2_CACHE+READ_FROM_VICTIM;
+			}
+		}
+	}
+	/*READ OR MODIFY HIT IN VICTIM*/
+	if(read_write_hit_miss==6){
+		if(WRITE_THROUGH){
+				total+=READ_FROM_VICTIM+READ_FROM_CACHE;
+				if(CACHE_MODE)
+					total+=READ_FROM_L2_CACHE;
+				Cycles+=total;
+				return total;
+		}
+		if(WRITE_BACK){//
+			if(dirty==0){
+				Cycles+=READ_FROM_VICTIM;
+				Cycles+=WRITE_TO_RAM;
+				return WRITE_TO_RAM+READ_FROM_VICTIM;
+			}
+			if(dirty==1){
+				Cycles+=READ_FROM_CACHE;
+				if(L2_CACHE==1)
+					Cycles+=READ_FROM_L2_CACHE;
+				Cycles+=READ_FROM_VICTIM;
+				return READ_FROM_VICTIM+READ_FROM_L2_CACHE+READ_FROM_VICTIM;
+			}
+		}
+	}
 }
 /**Frees every single memory used by our List**/
 void free_Cache (struct Cache *chain){
@@ -1425,6 +1851,10 @@ WriteMiss=0;
 ModifyMiss=0;
 ReadHit=0;
 WriteHit=0;
+WriteHitofVictim=0;
+ReadHittoVictim=0;
+WriteHittoL2=0;
+ReadHittoL2=0;
 ModifyHit=0;
 Cycles=0;
 compulsory=0;
@@ -1436,7 +1866,7 @@ void createVictim(int CACHE_SIZE,struct Cache *Tail){
 	struct Cache *newCache;
 	int i=0;
 	int CACHEBITS=log_2(CACHE_SIZE/WORD_SIZE);
-	int size=CACHE_SIZE/WORD_SIZE;
+	int size=CACHE_SIZE;
 	for(i=0;i<size;i++){
 		newCache=(struct Cache*)malloc((sizeof(struct Cache)));
 		newCache->Valid=false;
@@ -1462,14 +1892,19 @@ int enqueueVictim(int tag,int index,int bo,int age,int touch){
 	int found=0;
 	int number=0;
 	int random=0;
+	int maxage=0;
 	int decisionplace=0;
+	//printf("tag:%d,Ind:%4d,bo:%d,age:%d,touch:%d",tag,index,bo,age,touch);
 	Temp= (struct Cache*)malloc((sizeof(struct Cache)));
 	Temp=Victim_Head.head;
+	//printf("tag:%d,Ind:%d,bo:%d,age:%d,touch:%d",T);
 	Temp1= (struct Cache*)malloc((sizeof(struct Cache)));
 	Temp1=Victim_Head.head;
+	//printf("tag:%d index:%d bo:%d age:%d\n",tag,writeplace,found,maxage);
 		while(Temp->head!=NULL){
-			if(Temp->Tag==tag&&Temp->Valid==true&&Temp->BlockOffSet==bo&&Temp->Index==index){
-				found=1;
+			if(Temp->Tag==tag&&Temp->Valid==true&&(WORDS_PER_BLOCK==1||Temp->BlockOffSet==bo)&&Temp->Index==index){
+				found=1;//if found in victim
+				//printf("tag:%d index:%d bo:%d age:%d\n",tag,writeplace,found,maxage);
 				writeplace=j;
 			}
 			j++;
@@ -1478,9 +1913,9 @@ int enqueueVictim(int tag,int index,int bo,int age,int touch){
 		if(found!=1){
 			Temp=Victim_Head.head;
 			while(Temp->head!=NULL){
-				if(Temp->BlockOffSet==bo&&Temp->Age==-1&&Temp->Index==index){
+				if(Temp->Age==-1){
 					writeplace=number;
-					found=2;
+					found=2;//if victim is almost empty
 				}
 				Temp=Temp->head;
 				number++;
@@ -1489,9 +1924,10 @@ int enqueueVictim(int tag,int index,int bo,int age,int touch){
 				number=0;
 				Temp=Victim_Head.head;
 				while(Temp->head!=NULL){
-					if(Temp->BlockOffSet==bo&&age>=Temp->Age){
-						age=Temp->Age;
+					if(maxage<=Temp->Age){
+						maxage=Temp->Age;
 						writeplace=number;
+						found=3;//if full victim and no more space
 					}
 				Temp=Temp->head;
 				number++;
@@ -1501,10 +1937,52 @@ int enqueueVictim(int tag,int index,int bo,int age,int touch){
 	for(i=0;i<writeplace;i++){
 	Temp1=Temp1->head;
 	}
+	//printf("tag:%d wr:%d found:%d age:%d\n",tag,writeplace,found,maxage);
+	if(Action=='W'){
 	Temp1->Tag=tag;
 	Temp1->Valid=true;
+	Temp1->Index=index;
 	Temp1->BlockOffSet=bo;
 	Temp1->Age=age;
 	Temp1->Touched=touch;
-	return writeplace;
+	}
+	return found;
+}
+
+void findvaluesinL2(int tagg,int indexx,int blockoffsets){
+	int TAG_L2[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
+	int INDEX_L2[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
+	int BLOCKOFFSET_L2[20]={9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
+	int num1=0;
+	int total=0,index=indexx,tag=tagg,bo=blockoffsets;
+	tag=tagg<<BlockOffset_bits+Index_bits;
+	if(Index_bits==0)
+		index=0;
+	else
+		index=indexx<<BlockOffset_bits;
+
+	if(BlockOffset_bits==0)
+		bo=0;
+	else
+		bo=blockoffsets;
+	total=tag+index+bo;
+	decToInt(total);
+			//***TAG_L2***//
+			for(num1=0;num1<Tag_bits_L2;num1++){
+				//fprintf(Output_w,"%d",BinaryNumber_L2[num1]);
+				TAG_L2[num1]=BinaryNumber_L2[num1];
+			}
+			Tag_cache_L2=BintoInt(TAG_L2);
+			fprintf(Output_w,"(%d)",Tag_cache_L2);
+
+
+
+			//***INDEX_L2***//
+			for(num1=0;num1<Index_bits_L2;num1++){
+				//fprintf(Output_w,"%d",BinaryNumber_L2[num1+Tag_bits_L2]);
+				INDEX_L2[num1]=BinaryNumber_L2[num1+Tag_bits_L2];
+			}
+			Index_cache_L2=BintoInt(INDEX_L2);
+			//fprintf(Output_w,"(%d)",Index_cache_L2);
+			
 }
