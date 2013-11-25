@@ -268,9 +268,8 @@ int main(int argc, char ** argv){
 					createCache(Adder_2,Temp2,2);
 				}
 			}
-			printQueue(L1_Head);
-			printQueue(L2_Head);
-			//printQueue();
+			//printQueue(L1_Head);
+			//printQueue(L2_Head);
 			//printf("\n\nOUR CACHE AFTER INPUT:\n");
 			//printf("=====================");
 			//printQueue(L1_Head);
@@ -444,7 +443,7 @@ void fillOutput(FILE *Output_w){
 
 
 			//***DECIMAL***//
-			fprintf(Output_w," %d\t",atoi(WordInLine));
+			fprintf(Output_w," %4d\t",atoi(WordInLine));
 
 
 
@@ -455,11 +454,10 @@ void fillOutput(FILE *Output_w){
 				TAG[num1]=BinaryNumber[num1];
 			}
 			Tag_cache=BintoInt(TAG);
-			fprintf(Output_w,"(%d)",Tag_cache);
+			fprintf(Output_w,"(%3d)",Tag_cache);
 
 			//***TAG_L2***//
 			for(num1=0;num1<Tag_bits_L2;num1++){
-				//fprintf(Output_w,"%d",BinaryNumber_L2[num1]);
 				TAG_L2[num1]=BinaryNumber_L2[num1];
 			}
 			Tag_cache_L2=BintoInt(TAG_L2);
@@ -475,11 +473,10 @@ void fillOutput(FILE *Output_w){
 				INDEX[num1]=BinaryNumber[num1+Tag_bits];
 			}
 			Index_cache=BintoInt(INDEX);
-			fprintf(Output_w,"(%d)",Index_cache);
+			fprintf(Output_w,"(%2d)",Index_cache);
 
 			//***INDEX_L2***//
 			for(num1=0;num1<Index_bits_L2;num1++){
-				//fprintf(Output_w,"%d",BinaryNumber_L2[num1+Tag_bits_L2]);
 				INDEX_L2[num1]=BinaryNumber_L2[num1+Tag_bits_L2];
 			}
 			Index_cache_L2=BintoInt(INDEX_L2);
@@ -497,17 +494,10 @@ void fillOutput(FILE *Output_w){
 			fprintf(Output_w,"(%d)",BlockOffset_cache);
 			//***BLOCK OFFSET_L2***//
 			for(num1=0;num1<BlockOffset_bits_L2;num1++){
-				//fprintf(Output_w,"%d",BinaryNumber[num1+Tag_bits_L2+Index_bits_L2]);
 				BLOCKOFFSET_L2[num1]=BinaryNumber[num1+Tag_bits_L2+Index_bits_L2];
 			}
 			BlockOffset_cache_L2=BintoInt(BLOCKOFFSET_L2);	
-			//fprintf(Output_w,"(%d)",BlockOffset_cache_L2);
 			}
-			//printf("%d:%d:%d:%d:%d:%d\n",Tag_cache,Index_cache,BlockOffset_cache,TAG,INDEX,BLOCKOFFSET);
-
-			//printf("%d:%d:%d:%d:%d:%d\n",Tag_cache,Index_cache,BlockOffset_cache,TAG,INDEX,BLOCKOFFSET);
-
-
 
 	}
 }//end of fillOutput(FILE *Output_w)
@@ -590,7 +580,7 @@ void printBinaryNumber(int tagg,int indexx,int blockoffsets){
 	else
 		bo=blockoffsets;
 	total=tag+index+bo;
-	fprintf(Output_w,"%d",total);
+	fprintf(Output_w,"%3d",total);
 }
 //** Input: an integer n and a line of characters and returns the n'th word **//
 void parseWord(char *characterLine,int i){
@@ -1148,7 +1138,7 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 			Hits++;
 			Temp->Touched=newCache->Age;
 			read_write_hit_miss=1;
-			fprintf(Output_w,"\tHIT\t\t\t\t\t");
+			fprintf(Output_w,"\t\t\tHIT\t\t\t\t\t\t\t\t\t");
 		}
 		else{
 			if(L2_CACHE==true){
@@ -1166,17 +1156,23 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 					ReadMiss++;
 					Misses++;
 					read_write_hit_miss=2;
-					fprintf(Output_w,"\tMISS:");
+					fprintf(Output_w,"\t\t\tMISS:");
 					if(Temp->Age==-1){
-						fprintf(Output_w,"\tCOMPULSORY\t\t\t");
+					fprintf(Output_w,"\tCOMPULSORY\tREPLACE:(UNKNOWN)");
 						compulsory++;
 					}else{
 						if(DIRECT_MAPPED){
-							fprintf(Output_w,"\tCAPACITY\t\t\t");
+							fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
+							printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+							fprintf(Output_w,")\t");
+							capacity++;
 						}
 						if(SET_ASSOCIATIVE||FULL_ASSOCIATIVE){
 							if(!isStringEqual(POLICY,"RANDOM")){
-								fprintf(Output_w,"\tCONFLICT\t\t\t");
+								fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
+								printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+								fprintf(Output_w,")\t");
+								capacity++;
 							}
 							else{
 								PLACE=Head.head;
@@ -1186,10 +1182,16 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 									PLACE=PLACE->head;
 								}
 								if(notfull){
-									fprintf(Output_w,"\tCONFLICT\t\t\t");
+									fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
+									printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+									fprintf(Output_w,")\t");
+									conflict++;
 								}
 								else{
-									fprintf(Output_w,"\tCAPACITY\t\t\t");
+									fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
+									printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+									fprintf(Output_w,")\t");
+									capacity++;
 								}
 							}
 						}
@@ -1225,14 +1227,14 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 							Hits++;
 							Temp->Touched=newCache->Age;
 							read_write_hit_miss=6;
-							fprintf(Output_w,"\tVICTIM_HIT\t\t\t\t\t");
+							fprintf(Output_w,"\t\t\tVICTIM_HIT\t\t\t\t\t\t\t");
 					}
 					if(found_in_L2==true){
 							ReadHittoL2++;
 							Hits++;
 							Temp_L2->Touched=newCache->Age;
 							read_write_hit_miss=8;
-							fprintf(Output_w,"\tL2_HIT\t\t\t\t\t");
+							fprintf(Output_w,"\t\t\tL2_HIT\t\t\t\t\t\t\t\t");
 					}
 			}
 		}//endof else if(action==R)
@@ -1242,7 +1244,7 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 			WriteHit++;
 			Hits++;
 			read_write_hit_miss=3;
-			fprintf(Output_w,"\tHIT\t\t\t\t\t");
+			fprintf(Output_w,"\t\t\tHIT\t\t\t\t\t\t\t\t\t");
 			Temp->Age=newCache->Age;
 			Temp->Touched=newCache->Age;
 			if(WRITE_BACK){
@@ -1261,9 +1263,9 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 				FoundinVictim=enqueueVictim(newCache->Tag,newCache->Index,newCache->BlockOffSet,newCache->Age,newCache->Touched);
 			}
 			if(FoundinVictim!=1&&found_in_L2!=true){
-				fprintf(Output_w,"\tMISS:");
+				fprintf(Output_w,"\t\t\tMISS:");
 				if(Temp->Age==-1){
-					fprintf(Output_w,"\tCOMPULSORY\tREPLACE:(UNKOWN)");
+					fprintf(Output_w,"\tCOMPULSORY\tREPLACE:(UNKNOWN)");
 					compulsory++;
 				}
 				else{
@@ -1339,7 +1341,7 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 							Hits++;
 							Temp->Touched=newCache->Age;
 							read_write_hit_miss=5;
-							fprintf(Output_w,"\tVICTIM_HIT\t\t\t\t\t");
+							fprintf(Output_w,"\t\t\tVICTIM_HIT\t\t\t\t\t\t\t");
 							if(WRITE_BACK){
 								Temp->Dirty=0;
 							}
@@ -1349,7 +1351,7 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 							Hits++;
 							Temp_L2->Touched=newCache->Age;
 							read_write_hit_miss=9;
-							fprintf(Output_w,"\tL2_HIT\t\t\t\t\t");
+							fprintf(Output_w,"\t\t\tL2_HIT\t\t\t\t\t\t\t\t");
 							Temp_L2->Age=newCache->Age;
 							Temp_L2->Touched=newCache->Age;
 					}
@@ -1362,7 +1364,7 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 			Hits++;
 			Temp->Touched=newCache->Age;
 			read_write_hit_miss=1;
-			fprintf(Output_w,"\tHIT\t\t\t\t\t");
+			fprintf(Output_w,"\t\t\tHIT\t\t\t\t\t\t\t\t\t");
 		}
 		else{
 			if(L2_CACHE==true){
@@ -1379,17 +1381,23 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 			ModifyMiss++;
 			Misses++;
 			read_write_hit_miss=2;
-			fprintf(Output_w,"\tMISS");
+			fprintf(Output_w,"\t\t\tMISS:");
 			if(Temp->Age==-1){
-				fprintf(Output_w,"\tCOMPULSORY\t\t\t");
+				fprintf(Output_w,"\tCOMPULSORY\tREPLACE:(UNKNOWN)");
 				compulsory++;
 			}else{
 				if(DIRECT_MAPPED){
-					fprintf(Output_w,"\tCAPACITY\t\t\t");
+					fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
+					printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+					fprintf(Output_w,")\t");
+					capacity++;
 				}
 				if(SET_ASSOCIATIVE||FULL_ASSOCIATIVE){
 					if(!isStringEqual(POLICY,"RANDOM")){
-						fprintf(Output_w,"\tCONFLICT\t\t\t");
+						fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
+						printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+						fprintf(Output_w,")\t");
+						capacity++;
 					}	
 					else{
 						PLACE=Head.head;
@@ -1399,10 +1407,16 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 							PLACE=PLACE->head;
 						}
 						if(notfull){
-							fprintf(Output_w,"\tCONFLICT\t\t\t");
+							fprintf(Output_w,"\tCONFLICT\tREPLACE:(");
+							printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+							fprintf(Output_w,")\t");
+							conflict++;
 						}
 						else{
-							fprintf(Output_w,"\tCAPACITY\t\t\t");
+							fprintf(Output_w,"\tCAPACITY\tREPLACE:(");
+							printBinaryNumber(Temp->Tag,newCache->Index,newCache->BlockOffSet);
+							fprintf(Output_w,")\t");
+							capacity++;
 						}
 					}
 				}
@@ -1440,14 +1454,14 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 							Hits++;
 							Temp->Touched=newCache->Age;
 							read_write_hit_miss=6;
-							fprintf(Output_w,"\tVICTIM_HIT\t\t\t\t\t");
+							fprintf(Output_w,"\t\t\tVICTIM_HIT\t\t\t\t\t\t\t");
 					}
 					if(found_in_L2==true){
 							ReadHittoL2++;
 							Hits++;
 							Temp_L2->Touched=newCache->Age;
 							read_write_hit_miss=8;
-							fprintf(Output_w,"\tL2_HIT\t\t\t\t\t");
+							fprintf(Output_w,"\t\t\tL2_HIT\t\t\t\t\t\t\t\t");
 					}
 					if(WRITE_BACK){
 						Temp->Dirty=0;
@@ -1461,7 +1475,7 @@ void enqueueCache(int size,int L1_CACHE_SIZE,struct Cache Head){
 	found_in_L2=false;
 	found_in_L1=false;
 	actionCycles=guessCycles(read_write_hit_miss,dirty);
-	fprintf(Output_w,"\tCYCLES:%d AGE...%d \n",actionCycles,Temp->Age);
+	fprintf(Output_w,"\tCYCLES:%d \tAGE:%d \n",actionCycles,Temp->Age);
 	free((void*)newCache);
 }
 //** finds a place for new address  int the  into Cache **//
@@ -1741,99 +1755,161 @@ int enqueuePlace(int tag,int index,int bo,int age,int touch,int CACHE_SIZE,struc
 int guessCycles(int read_write_hit_miss,int dirty){
 	int total=0;
 	/*READ OR MODIFY HIT*/
-	if(read_write_hit_miss==1){
+	if(read_write_hit_miss==1){//done
 			return READ_FROM_CACHE;
 	}
+
 	/*READ OR MODIFY MISS*/
-	if(read_write_hit_miss==2){
-		if(WRITE_THROUGH)
-				Cycles+=READ_FROM_CACHE+READ_FROM_RAM;
-				return READ_FROM_CACHE+READ_FROM_RAM;
-		if(!WRITE_THROUGH){//
-			Cycles+=READ_FROM_CACHE+READ_FROM_RAM+WRITE_TO_CACHE;
-			return READ_FROM_CACHE+READ_FROM_RAM+WRITE_TO_CACHE;
-		}
-	}
-	/*WRITE HIT*/
-	if(read_write_hit_miss==3){
-		if(WRITE_THROUGH){
-				Cycles+=WRITE_TO_CACHE;
-				Cycles+=WRITE_TO_RAM;
-				return WRITE_TO_CACHE+WRITE_TO_RAM;
-		}
-		if(WRITE_BACK){//
-			if(dirty==0){
-				Cycles+=READ_FROM_CACHE;
-				Cycles+=WRITE_TO_RAM;
-				return WRITE_TO_RAM+READ_FROM_CACHE;
-			}
-			if(dirty==1){
-				Cycles+=READ_FROM_CACHE;
-				return READ_FROM_CACHE;
-			}
-		}
-	}
-	/*WRITE MISS*/
-	if(read_write_hit_miss==4){
-		if(WRITE_ALLOCATE){
-				Cycles+=READ_FROM_CACHE;
-				Cycles+=READ_FROM_RAM;
-				Cycles+=WRITE_TO_CACHE;
-				Cycles+=WRITE_TO_RAM;
-				return WRITE_TO_RAM+WRITE_TO_CACHE+READ_FROM_RAM+READ_FROM_CACHE;
-			}
-		if(!WRITE_ALLOCATE){//
-			Cycles+=READ_FROM_CACHE;
-			Cycles+=READ_FROM_RAM;
-			Cycles+=WRITE_TO_RAM;
-			return WRITE_TO_RAM+READ_FROM_RAM+READ_FROM_CACHE;
-		}
-	}
-	/*WRITE HIT IN VICTIM*/
-	if(read_write_hit_miss==5){
-		if(WRITE_THROUGH){
-				Cycles+=READ_FROM_VICTIM;
-				return READ_FROM_VICTIM;
-		}
-		if(WRITE_BACK){//
-			if(dirty==0){
-				Cycles+=READ_FROM_VICTIM;
-				Cycles+=WRITE_TO_RAM;
-				return WRITE_TO_RAM+READ_FROM_VICTIM;
-			}
-			if(dirty==1){
-				Cycles+=READ_FROM_CACHE;
-				if(L2_CACHE==1)
-					Cycles+=READ_FROM_L2_CACHE;
-				Cycles+=READ_FROM_VICTIM;
-				return READ_FROM_VICTIM+READ_FROM_L2_CACHE+READ_FROM_VICTIM;
-			}
-		}
-	}
-	/*READ OR MODIFY HIT IN VICTIM*/
-	if(read_write_hit_miss==6){
-		if(WRITE_THROUGH){
-				total+=READ_FROM_VICTIM+READ_FROM_CACHE;
-				if(CACHE_MODE)
+	if(read_write_hit_miss==2){//done
+				total+=READ_FROM_CACHE;
+				if(VICTIM_CACHE==true)
+					total+=READ_FROM_VICTIM;
+				if(L2_CACHE==true)
 					total+=READ_FROM_L2_CACHE;
+				total+=READ_FROM_RAM;
+				Cycles+=total;
+				return total;
+	}//end of read miss
+
+	/*WRITE HIT*/
+	if(read_write_hit_miss==3){//done
+		if(WRITE_THROUGH){
+				total=WRITE_TO_CACHE;
+				if(VICTIM_CACHE==true&&L2_CACHE==false)
+					total+=WRITE_TO_VICTIM;
+				else
+				if(L2_CACHE==true)
+					total+=WRITE_TO_L2_CACHE ;
+				else
+					total+=WRITE_TO_RAM;
+				Cycles+=total;
+		}
+		if(WRITE_BACK){//
+			if(dirty==0){
+				total=WRITE_TO_CACHE;
+				Cycles+=total;
+			}
+			if(dirty==1){
+				total=WRITE_TO_CACHE;
+				if(VICTIM_CACHE==true&&L2_CACHE==false)
+					total+=WRITE_TO_VICTIM;
+				else
+				if(L2_CACHE==true)
+					total+=WRITE_TO_L2_CACHE ;
+				else
+					total+=WRITE_TO_RAM;
+				Cycles+=total;
+			}
+		}
+		return total;
+	}
+
+	/*WRITE MISS*/
+	if(read_write_hit_miss==4){//done
+		if(WRITE_ALLOCATE){
+				total=WRITE_TO_CACHE+WRITE_TO_L2_CACHE+WRITE_TO_VICTIM;
 				Cycles+=total;
 				return total;
 		}
-		if(WRITE_BACK){//
-			if(dirty==0){
-				Cycles+=READ_FROM_VICTIM;
-				Cycles+=WRITE_TO_RAM;
-				return WRITE_TO_RAM+READ_FROM_VICTIM;
-			}
-			if(dirty==1){
-				Cycles+=READ_FROM_CACHE;
-				if(L2_CACHE==1)
-					Cycles+=READ_FROM_L2_CACHE;
-				Cycles+=READ_FROM_VICTIM;
-				return READ_FROM_VICTIM+READ_FROM_L2_CACHE+READ_FROM_VICTIM;
-			}
+		if(!WRITE_ALLOCATE){//
+			//victim miss
+			if(VICTIM_CACHE==true)
+					total+=WRITE_TO_RAM;
+			//l2 miss
+			if(L2_CACHE==true)
+					total+=WRITE_TO_VICTIM;
+			else
+					total+=WRITE_TO_RAM;
+			//l1 miss
+			if(L2_CACHE==true)
+				total+=WRITE_TO_L2_CACHE;
+			else
+			if(VICTIM_CACHE==true)
+				total+=WRITE_TO_VICTIM;
+			else
+				total+=WRITE_TO_RAM;
+
+			Cycles+=total;
+			return total;
 		}
 	}
+
+	/*WRITE HIT IN VICTIM*/
+	if(read_write_hit_miss==5){//done
+		if(WRITE_THROUGH){
+				total=WRITE_TO_VICTIM;
+				total+=WRITE_TO_RAM;
+		}
+		if(WRITE_BACK){
+			if(dirty==0){
+				total=WRITE_TO_VICTIM;
+			}
+			if(dirty==1){
+				total=WRITE_TO_VICTIM+WRITE_TO_RAM;
+			}
+		}
+		if(WRITE_ALLOCATE){
+				//MISS TO L1
+				total+=WRITE_TO_CACHE;
+				//MISS TO L2
+				if(L2_CACHE)
+					total+=WRITE_TO_L2_CACHE;
+		}
+		if(!WRITE_ALLOCATE){
+			//MISS TO L1
+			if(L2_CACHE)
+				total+=WRITE_TO_L2_CACHE;
+			else
+				total+=WRITE_TO_VICTIM;
+			//MISS TO L2
+			if(L2_CACHE)
+				total+=WRITE_TO_VICTIM;
+		}
+		Cycles+=total;
+		return total;
+	}
+	/*READ OR MODIFY HIT IN VICTIM*/
+	if(read_write_hit_miss==6){
+			total+=READ_FROM_CACHE+READ_FROM_L2_CACHE+READ_FROM_VICTIM;	
+			return total;
+	}
+	/*READ OR MODIFY HIT IN L2*/
+	if(read_write_hit_miss==8){//doone
+			total+=READ_FROM_CACHE+READ_FROM_L2_CACHE;	
+			return total;
+	}
+	
+	/*WRITE HIT IN L2*/
+	if(read_write_hit_miss==9){//donne
+		if(WRITE_THROUGH){
+				total+=WRITE_TO_L2_CACHE;
+				if(VICTIM_CACHE==true)
+					total+=WRITE_TO_VICTIM;
+				else
+					total+=WRITE_TO_RAM;
+		}
+		if(WRITE_BACK){//
+			if(dirty==0){
+					total+=WRITE_TO_L2_CACHE;
+			}
+			if(dirty==1){
+					total+=READ_FROM_L2_CACHE;
+					if(VICTIM_CACHE==true)
+						total+=WRITE_TO_VICTIM;
+					else
+						total+=WRITE_TO_RAM;
+			}
+		}
+		if(WRITE_ALLOCATE){
+				total+=WRITE_TO_CACHE;
+		}
+		if(!WRITE_ALLOCATE){//
+			total+=WRITE_TO_L2_CACHE;
+		}
+		Cycles+=total;
+		return total;
+	}
+
 }
 /**Frees every single memory used by our List**/
 void free_Cache (struct Cache *chain){
@@ -1939,12 +2015,12 @@ int enqueueVictim(int tag,int index,int bo,int age,int touch){
 	}
 	//printf("tag:%d wr:%d found:%d age:%d\n",tag,writeplace,found,maxage);
 	if(Action=='W'){
-	Temp1->Tag=tag;
-	Temp1->Valid=true;
-	Temp1->Index=index;
-	Temp1->BlockOffSet=bo;
-	Temp1->Age=age;
-	Temp1->Touched=touch;
+		Temp1->Tag=tag;
+		Temp1->Valid=true;
+		Temp1->Index=index;
+		Temp1->BlockOffSet=bo;
+		Temp1->Age=age;
+		Temp1->Touched=touch;
 	}
 	return found;
 }
@@ -1973,7 +2049,7 @@ void findvaluesinL2(int tagg,int indexx,int blockoffsets){
 				TAG_L2[num1]=BinaryNumber_L2[num1];
 			}
 			Tag_cache_L2=BintoInt(TAG_L2);
-			fprintf(Output_w,"(%d)",Tag_cache_L2);
+			//fprintf(Output_w,"(%d)",Tag_cache_L2);
 
 
 

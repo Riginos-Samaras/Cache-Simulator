@@ -2,120 +2,300 @@
 
 
 
-L1_CACHE_SIZE:32 , L2_CACHE_SIZE:32 	(T:5,IN:4,BO:0)	(T:5,IN:4,BO:0)
+L1_CACHE_SIZE:32 , L2_CACHE_SIZE:32 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
 ================================
-TAG:5 Index:4 BlockOffSet:0
+TAG:8 Index:0 BlockOffSet:0
 
-ReadMisses:475 ReadHits:20
-WriteMisses:454 WriteHits:15
-ModifyMisses:479 Modify_Hits:21
-Write_Victim_Hits:8 Read_Victim_Hit:18
-Write_L2_Hits:18 Read_L2_Hit:28 
+ReadMisses:253 ReadHits:7
+WriteMisses:220 WriteHits:8
+ModifyMisses:231 Modify_Hits:10
+Write_Victim_Hits:13 Read_Victim_Hit:26
+Write_L2_Hits:0 Read_L2_Hit:0 
 
-Total Misses:1408  Total Hits:128
+Total Misses:704  Total Hits:64
 Performance:8.333334 %
 Flushes:0
-Total Cycles:12593
-MISSES:	Compulsory:16
-	Capacity:0
-	Conflict:446
+Total Cycles:9760
+MISSES:	Compulsory:8
+	Capacity:696
+	Conflict:0
 
 
 
-L1_CACHE_SIZE:32 , L2_CACHE_SIZE:64 	(T:5,IN:4,BO:0)	(T:4,IN:5,BO:0)
+L1_CACHE_SIZE:32 , L2_CACHE_SIZE:64 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
 ================================
-TAG:5 Index:4 BlockOffSet:0
+TAG:8 Index:0 BlockOffSet:0
 
-ReadMisses:462 ReadHits:22
-WriteMisses:438 WriteHits:17
-ModifyMisses:458 Modify_Hits:21
-Write_Victim_Hits:10 Read_Victim_Hit:16
-Write_L2_Hits:30 Read_L2_Hit:62 
+ReadMisses:243 ReadHits:8
+WriteMisses:214 WriteHits:9
+ModifyMisses:228 Modify_Hits:9
+Write_Victim_Hits:10 Read_Victim_Hit:17
+Write_L2_Hits:8 Read_L2_Hit:22 
 
-Total Misses:1358  Total Hits:178
-Performance:11.588541 %
+Total Misses:685  Total Hits:83
+Performance:10.807291 %
 Flushes:0
-Total Cycles:12183
-MISSES:	Compulsory:16
-	Capacity:0
-	Conflict:430
+Total Cycles:9554
+MISSES:	Compulsory:8
+	Capacity:677
+	Conflict:0
 
 
 
-L1_CACHE_SIZE:64 , L2_CACHE_SIZE:64 	(T:4,IN:5,BO:0)	(T:4,IN:5,BO:0)
+L1_CACHE_SIZE:64 , L2_CACHE_SIZE:64 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
 ================================
-TAG:4 Index:5 BlockOffSet:0
+TAG:8 Index:0 BlockOffSet:0
 
-ReadMisses:448 ReadHits:30
-WriteMisses:428 WriteHits:29
-ModifyMisses:450 Modify_Hits:32
-Write_Victim_Hits:6 Read_Victim_Hit:8
-Write_L2_Hits:32 Read_L2_Hit:73 
+ReadMisses:243 ReadHits:23
+WriteMisses:214 WriteHits:17
+ModifyMisses:228 Modify_Hits:16
+Write_Victim_Hits:10 Read_Victim_Hit:17
+Write_L2_Hits:0 Read_L2_Hit:0 
 
-Total Misses:1326  Total Hits:210
-Performance:13.671875 %
+Total Misses:685  Total Hits:83
+Performance:10.807291 %
 Flushes:0
-Total Cycles:11883
+Total Cycles:9489
+MISSES:	Compulsory:16
+	Capacity:669
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:32 , L2_CACHE_SIZE:128 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:228 ReadHits:8
+WriteMisses:204 WriteHits:9
+ModifyMisses:211 Modify_Hits:8
+Write_Victim_Hits:5 Read_Victim_Hit:12
+Write_L2_Hits:23 Read_L2_Hit:60 
+
+Total Misses:643  Total Hits:125
+Performance:16.276043 %
+Flushes:0
+Total Cycles:9116
+MISSES:	Compulsory:8
+	Capacity:635
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:64 , L2_CACHE_SIZE:128 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:228 ReadHits:23
+WriteMisses:204 WriteHits:20
+ModifyMisses:211 Modify_Hits:15
+Write_Victim_Hits:5 Read_Victim_Hit:12
+Write_L2_Hits:12 Read_L2_Hit:38 
+
+Total Misses:643  Total Hits:125
+Performance:16.276043 %
+Flushes:0
+Total Cycles:9027
+MISSES:	Compulsory:16
+	Capacity:627
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:128 , L2_CACHE_SIZE:128 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:228 ReadHits:40
+WriteMisses:204 WriteHits:32
+ModifyMisses:211 Modify_Hits:36
+Write_Victim_Hits:4 Read_Victim_Hit:12
+Write_L2_Hits:1 Read_L2_Hit:0 
+
+Total Misses:643  Total Hits:125
+Performance:16.276043 %
+Flushes:0
+Total Cycles:8926
 MISSES:	Compulsory:32
-	Capacity:0
-	Conflict:414
+	Capacity:611
+	Conflict:0
 
 
 
-L1_CACHE_SIZE:32 , L2_CACHE_SIZE:128 	(T:5,IN:4,BO:0)	(T:3,IN:6,BO:0)
+L1_CACHE_SIZE:32 , L2_CACHE_SIZE:256 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
 ================================
-TAG:5 Index:4 BlockOffSet:0
+TAG:8 Index:0 BlockOffSet:0
 
-ReadMisses:439 ReadHits:21
-WriteMisses:410 WriteHits:16
-ModifyMisses:440 Modify_Hits:20
-Write_Victim_Hits:9 Read_Victim_Hit:18
-Write_L2_Hits:60 Read_L2_Hit:103 
+ReadMisses:204 ReadHits:8
+WriteMisses:182 WriteHits:7
+ModifyMisses:193 Modify_Hits:8
+Write_Victim_Hits:1 Read_Victim_Hit:0
+Write_L2_Hits:51 Read_L2_Hit:114 
 
-Total Misses:1289  Total Hits:247
-Performance:16.080730 %
+Total Misses:579  Total Hits:189
+Performance:24.609375 %
 Flushes:0
-Total Cycles:11550
+Total Cycles:8477
+MISSES:	Compulsory:8
+	Capacity:571
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:64 , L2_CACHE_SIZE:256 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:204 ReadHits:24
+WriteMisses:182 WriteHits:17
+ModifyMisses:193 Modify_Hits:17
+Write_Victim_Hits:1 Read_Victim_Hit:0
+Write_L2_Hits:41 Read_L2_Hit:89 
+
+Total Misses:579  Total Hits:189
+Performance:24.609375 %
+Flushes:0
+Total Cycles:8425
 MISSES:	Compulsory:16
-	Capacity:0
-	Conflict:402
+	Capacity:563
+	Conflict:0
 
 
 
-L1_CACHE_SIZE:64 , L2_CACHE_SIZE:128 	(T:4,IN:5,BO:0)	(T:3,IN:6,BO:0)
+L1_CACHE_SIZE:128 , L2_CACHE_SIZE:256 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
 ================================
-TAG:4 Index:5 BlockOffSet:0
+TAG:8 Index:0 BlockOffSet:0
 
-ReadMisses:427 ReadHits:35
-WriteMisses:407 WriteHits:31
-ModifyMisses:427 Modify_Hits:31
-Write_Victim_Hits:7 Read_Victim_Hit:13
-Write_L2_Hits:50 Read_L2_Hit:108 
+ReadMisses:203 ReadHits:41
+WriteMisses:185 WriteHits:34
+ModifyMisses:193 Modify_Hits:36
+Write_Victim_Hits:0 Read_Victim_Hit:0
+Write_L2_Hits:22 Read_L2_Hit:54 
 
-Total Misses:1261  Total Hits:275
-Performance:17.903645 %
+Total Misses:581  Total Hits:187
+Performance:24.348957 %
 Flushes:0
-Total Cycles:11429
+Total Cycles:8315
 MISSES:	Compulsory:32
-	Capacity:0
-	Conflict:393
+	Capacity:549
+	Conflict:0
 
 
 
-L1_CACHE_SIZE:128 , L2_CACHE_SIZE:128 	(T:3,IN:6,BO:0)	(T:3,IN:6,BO:0)
+L1_CACHE_SIZE:256 , L2_CACHE_SIZE:256 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
 ================================
-TAG:3 Index:6 BlockOffSet:0
+TAG:8 Index:0 BlockOffSet:0
 
-ReadMisses:398 ReadHits:72
-WriteMisses:379 WriteHits:63
-ModifyMisses:397 Modify_Hits:66
-Write_Victim_Hits:0 Read_Victim_Hit:1
-Write_L2_Hits:53 Read_L2_Hit:107 
+ReadMisses:202 ReadHits:72
+WriteMisses:182 WriteHits:58
+ModifyMisses:189 Modify_Hits:57
+Write_Victim_Hits:1 Read_Victim_Hit:0
+Write_L2_Hits:0 Read_L2_Hit:7 
 
-Total Misses:1174  Total Hits:362
-Performance:23.567707 %
+Total Misses:573  Total Hits:195
+Performance:25.390625 %
 Flushes:0
-Total Cycles:10783
+Total Cycles:8042
 MISSES:	Compulsory:64
-	Capacity:0
-	Conflict:353
+	Capacity:509
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:32 , L2_CACHE_SIZE:512 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:155 ReadHits:11
+WriteMisses:138 WriteHits:8
+ModifyMisses:129 Modify_Hits:9
+Write_Victim_Hits:0 Read_Victim_Hit:0
+Write_L2_Hits:95 Read_L2_Hit:223 
+
+Total Misses:422  Total Hits:346
+Performance:45.052086 %
+Flushes:0
+Total Cycles:6954
+MISSES:	Compulsory:8
+	Capacity:414
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:64 , L2_CACHE_SIZE:512 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:155 ReadHits:22
+WriteMisses:138 WriteHits:13
+ModifyMisses:129 Modify_Hits:18
+Write_Victim_Hits:0 Read_Victim_Hit:0
+Write_L2_Hits:90 Read_L2_Hit:203 
+
+Total Misses:422  Total Hits:346
+Performance:45.052086 %
+Flushes:0
+Total Cycles:6931
+MISSES:	Compulsory:16
+	Capacity:406
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:128 , L2_CACHE_SIZE:512 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:155 ReadHits:28
+WriteMisses:138 WriteHits:28
+ModifyMisses:129 Modify_Hits:29
+Write_Victim_Hits:0 Read_Victim_Hit:0
+Write_L2_Hits:75 Read_L2_Hit:186 
+
+Total Misses:422  Total Hits:346
+Performance:45.052086 %
+Flushes:0
+Total Cycles:6850
+MISSES:	Compulsory:32
+	Capacity:390
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:256 , L2_CACHE_SIZE:512 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:156 ReadHits:61
+WriteMisses:135 WriteHits:51
+ModifyMisses:130 Modify_Hits:54
+Write_Victim_Hits:0 Read_Victim_Hit:0
+Write_L2_Hits:55 Read_L2_Hit:126 
+
+Total Misses:421  Total Hits:347
+Performance:45.182289 %
+Flushes:0
+Total Cycles:6670
+MISSES:	Compulsory:64
+	Capacity:357
+	Conflict:0
+
+
+
+L1_CACHE_SIZE:512 , L2_CACHE_SIZE:512 	(T:8,IN:0,BO:0)	(T:8,IN:0,BO:0)
+================================
+TAG:8 Index:0 BlockOffSet:0
+
+ReadMisses:141 ReadHits:122
+WriteMisses:126 WriteHits:108
+ModifyMisses:127 Modify_Hits:118
+Write_Victim_Hits:0 Read_Victim_Hit:0
+Write_L2_Hits:7 Read_L2_Hit:19 
+
+Total Misses:394  Total Hits:374
+Performance:48.697914 %
+Flushes:0
+Total Cycles:5962
+MISSES:	Compulsory:128
+	Capacity:266
+	Conflict:0
